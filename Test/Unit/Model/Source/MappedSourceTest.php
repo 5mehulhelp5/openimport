@@ -67,11 +67,18 @@ class MappedSourceTest extends TestCase
 
     public function testKeysAreZeroBasedRowPositionsAndSeekWorks(): void
     {
-        $source = new MappedSource(['sku'], static fn (): \ArrayObject => new \ArrayObject([
-            ['sku' => 'A'],
-            ['sku' => 'B'],
-            ['sku' => 'C'],
-        ]));
+        $rows = new class implements \IteratorAggregate {
+            /**
+             * @return \Generator<int, array<string, string>>
+             */
+            public function getIterator(): \Generator
+            {
+                yield ['sku' => 'A'];
+                yield ['sku' => 'B'];
+                yield ['sku' => 'C'];
+            }
+        };
+        $source = new MappedSource(['sku'], static fn (): \IteratorAggregate => $rows);
 
         $source->seek(2);
         self::assertSame(2, $source->key());
