@@ -7,6 +7,8 @@ docs_dir: docs
 strict: true
 nav:
   - Home: index.md
+  - Developers:
+      - Core bridge: core-bridge.md
 theme:
   name: readthedocs
 markdown_extensions:
