@@ -1,0 +1,15 @@
+site_name: OpenImport
+site_description: Import and export for Magento 2 with profiles, mapping, dry run, schedules and SFTP. Free, MIT, built on Magento's own import engine.
+site_url: https://iranimij.github.io/openimport/
+repo_url: https://github.com/iranimij/openimport
+edit_uri: edit/main/docs/
+docs_dir: docs
+strict: true
+nav:
+  - Home: index.md
+theme:
+  name: readthedocs
+markdown_extensions:
+  - tables
+  - toc:
+      permalink: true

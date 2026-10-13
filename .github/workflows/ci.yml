@@ -1,0 +1,180 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: '41 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  MODULE_NAME: Iranimij_OpenImport
+  COMPOSER_NAME: iranimij/openimport
+
+jobs:
+  matrix:
+    name: Build matrix
+    runs-on: ubuntu-latest
+    outputs:
+      full: ${{ steps.set.outputs.full }}
+      integration: ${{ steps.set.outputs.integration }}
+    steps:
+      # Supported pairs only. OpenImport sits in front of core's import engine, whose behaviour differs between
+      # 2.4.7, 2.4.8 and 2.4.9, so every run (pull requests included) runs the full integration matrix
+      # (07 · Build Brief §5: core bridge, schema, order export queries and runner need it before merge).
+      - id: set
+        run: |
+          FULL='[{"magento":"2.4.7-p10","php":"8.2"},{"magento":"2.4.7-p10","php":"8.3"},{"magento":"2.4.8-p5","php":"8.2"},{"magento":"2.4.8-p5","php":"8.3"},{"magento":"2.4.8-p5","php":"8.4"},{"magento":"2.4.9","php":"8.3"},{"magento":"2.4.9","php":"8.4"}]'
+          INT='[{"magento":"2.4.7-p10","php":"8.2"},{"magento":"2.4.7-p10","php":"8.3"},{"magento":"2.4.8-p5","php":"8.3"},{"magento":"2.4.8-p5","php":"8.4"},{"magento":"2.4.9","php":"8.3"},{"magento":"2.4.9","php":"8.4"}]'
+          echo "full=$FULL" >> "$GITHUB_OUTPUT"
+          echo "integration=$INT" >> "$GITHUB_OUTPUT"
+
+  phpcs:
+    name: PHPCS (Magento2 standard)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: extdn/github-actions-m2/magento-coding-standard/8.3@97152617ecb8e17169983ee2f6accc9ef4a1f60a
+
+  phpstan:
+    name: PHPStan level 6
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: extdn/github-actions-m2/magento-phpstan/8.3@97152617ecb8e17169983ee2f6accc9ef4a1f60a
+        with:
+          composer_name: ${{ env.COMPOSER_NAME }}
+          phpstan_level: 6
+          magento_pre_install_script: .github/ci/pre-install.sh
+
+  unit:
+    name: Unit ${{ matrix.magento }} / PHP ${{ matrix.php }}
+    needs: matrix
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.full) }}
+    steps:
+      - uses: actions/checkout@v7
+      - if: matrix.php == '8.2'
+        uses: extdn/github-actions-m2/magento-unit-tests/8.2@97152617ecb8e17169983ee2f6accc9ef4a1f60a
+        with:
+          module_name: ${{ env.MODULE_NAME }}
+          composer_name: ${{ env.COMPOSER_NAME }}
+          magento_version: ${{ matrix.magento }}
+          magento_pre_install_script: .github/ci/pre-install.sh
+      - if: matrix.php == '8.3'
+        uses: extdn/github-actions-m2/magento-unit-tests/8.3@97152617ecb8e17169983ee2f6accc9ef4a1f60a
+        with:
+          module_name: ${{ env.MODULE_NAME }}
+          composer_name: ${{ env.COMPOSER_NAME }}
+          magento_version: ${{ matrix.magento }}
+          magento_pre_install_script: .github/ci/pre-install.sh
+      - if: matrix.php == '8.4'
+        uses: extdn/github-actions-m2/magento-unit-tests/8.4@97152617ecb8e17169983ee2f6accc9ef4a1f60a
+        with:
+          module_name: ${{ env.MODULE_NAME }}
+          composer_name: ${{ env.COMPOSER_NAME }}
+          magento_version: ${{ matrix.magento }}
+          magento_pre_install_script: .github/ci/pre-install.sh
+
+  coverage:
+    name: Unit coverage (≥ 85 % on the engine namespaces)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: pcov
+          extensions: bcmath, gd, intl, soap, sodium, xsl, zip
+      - name: Install the module's Composer dependencies from the Magento mirror
+        env:
+          COMPOSER_AUTH: '{"github-oauth": {"github.com": "${{ secrets.GITHUB_TOKEN }}"}}'
+        run: |
+          composer config repositories.magento composer https://repo-magento-mirror.fooman.co.nz/
+          composer config --no-plugins allow-plugins.magento/composer-dependency-version-audit-plugin false
+          composer config --no-plugins allow-plugins.magento/* true
+          composer require --dev --no-interaction --no-progress --no-update "phpunit/phpunit:^12.0"
+          composer update --no-interaction --no-progress --prefer-dist
+      - run: vendor/bin/phpunit -c phpunit.coverage.xml --coverage-clover clover.xml --coverage-text
+      # Gate namespaces grow with the code (07 · Build Brief §6).
+      - run: php .github/ci/coverage-gate.php clover.xml 85 Model
+
+  integration:
+    name: Integration ${{ matrix.magento }} / PHP ${{ matrix.php }}
+    needs: matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      MAGENTO_VERSION: ${{ matrix.magento }}
+      SEARCH_ENGINE: opensearch
+      MODULE_DIR: ${{ github.workspace }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.matrix.outputs.integration) }}
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: magento_integration_tests
+        ports:
+          - 3306:3306
+        options: >-
+          --tmpfs /tmp:rw --tmpfs /var/lib/mysql:rw
+          --health-cmd="mysqladmin ping" --health-interval=10s
+          --health-timeout=5s --health-retries=5
+    steps:
+      - uses: actions/checkout@v7
+      - name: OpenSearch
+        run: |
+          docker run -d --name search -p 9200:9200 -e discovery.type=single-node -e DISABLE_SECURITY_PLUGIN=true \
+            -e OPENSEARCH_JAVA_OPTS='-Xms512m -Xmx512m' opensearchproject/opensearch:2.12.0
+          for i in $(seq 1 60); do curl -fsS 'localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' && break; sleep 3; done
+          curl -fsS localhost:9200
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: composer:v2
+          extensions: bcmath, gd, intl, mbstring, pdo_mysql, soap, sockets, sodium, xsl, zip
+          ini-values: memory_limit=-1
+      - run: .github/ci/integration.sh
+      - name: Test logs
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: integration-logs-${{ matrix.magento }}-php${{ matrix.php }}
+          path: /tmp/magento/dev/tests/integration/tmp/sandbox-*/var/log
+          if-no-files-found: ignore
+          retention-days: 7
+
+  docs:
+    name: Docs (mkdocs --strict)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - run: pipx run --spec "mkdocs==1.6.1" mkdocs build --strict
+
+  ci-ok:
+    name: ci-ok
+    if: always()
+    needs: [phpcs, phpstan, unit, integration, coverage, docs]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if any job failed or was skipped
+        run: |
+          echo '${{ toJSON(needs) }}' | tee needs.json
+          if echo '${{ toJSON(needs) }}' | grep -Eq '"result": "(failure|cancelled|skipped)"'; then exit 1; fi

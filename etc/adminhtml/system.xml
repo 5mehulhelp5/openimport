@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Iman Aboheydary. All rights reserved.
+ * See LICENSE for license details (MIT).
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <section id="openimport" translate="label" type="text" sortOrder="30" showInDefault="1" showInWebsite="0" showInStore="0">
+            <label>OpenImport</label>
+            <tab>iranimij</tab>
+            <resource>Iranimij_OpenImport::config</resource>
+            <group id="general" translate="label" type="text" sortOrder="10" showInDefault="1">
+                <label>Runs</label>
+                <field id="keep_files_days" translate="label comment" type="text" sortOrder="10" showInDefault="1" canRestore="1">
+                    <label>Keep run files for (days)</label>
+                    <comment>Source files, export files and error reports of finished runs are removed after this many days.</comment>
+                    <validate>required-entry validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="max_errors_per_run" translate="label comment" type="text" sortOrder="20" showInDefault="1" canRestore="1">
+                    <label>Errors kept per run</label>
+                    <comment>A run stores at most this many row errors. The run still counts all of them.</comment>
+                    <validate>required-entry validate-digits validate-greater-than-zero</validate>
+                </field>
+                <field id="cron_time_budget" translate="label comment" type="text" sortOrder="30" showInDefault="1" canRestore="1">
+                    <label>Time per cron pass (seconds)</label>
+                    <comment>How long one pass of the OpenImport cron group may start new runs. A run that has started always finishes.</comment>
+                    <validate>required-entry validate-digits validate-greater-than-zero</validate>
+                </field>
+            </group>
+            <group id="security" translate="label" type="text" sortOrder="20" showInDefault="1">
+                <label>Safety</label>
+                <field id="allowed_hosts" translate="label comment" type="textarea" sortOrder="10" showInDefault="1" canRestore="1">
+                    <label>Private hosts allowed as URL sources</label>
+                    <comment>One host name per line. Public hosts are always allowed. Addresses in private, loopback and link-local networks are refused unless their host is listed here.</comment>
+                </field>
+                <field id="allowed_folders" translate="label comment" type="textarea" sortOrder="20" showInDefault="1" canRestore="1">
+                    <label>Extra server folders for folder sources</label>
+                    <comment>One absolute path per line. var/openimport is always allowed. Any other folder must be listed here.</comment>
+                </field>
+                <field id="formula_guard" translate="label comment" type="select" sortOrder="30" showInDefault="1" canRestore="1">
+                    <label>Protect exports against spreadsheet formulas</label>
+                    <comment>Cells that start with =, +, -, @, a tab or a line break get a leading apostrophe in CSV and XLSX exports, so a spreadsheet does not run them as formulas.</comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="safety_threshold_percent" translate="label comment" type="text" sortOrder="40" showInDefault="1" canRestore="1">
+                    <label>Safety limit for Replace and Delete (% of records)</label>
+                    <comment>Runs that would replace or delete more than this share of an entity's records stop and wait for confirmation. Profiles can set their own limit.</comment>
+                    <validate>required-entry validate-digits validate-digits-range digits-range-1-100</validate>
+                </field>
+            </group>
+        </section>
+    </system>
+</config>
