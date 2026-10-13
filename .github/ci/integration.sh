@@ -42,17 +42,18 @@ echo "::endgroup::"
 
 echo "::group::Test framework configuration ($SEARCH_ENGINE)"
 cd dev/tests/integration
+# The .dist file reads constants of Magento\TestFramework\Bootstrap (not autoloadable here), so the configuration is
+# written directly; the admin values are the test framework's own defaults (Bootstrap::ADMIN_*).
 php -r '
-  $c = require "etc/install-config-mysql.php.dist";
-  foreach (array_keys($c) as $k) {
-      if (preg_match("/^(amqp|opensearch|elasticsearch|consumers-wait)/", $k)) { unset($c[$k]); }
-  }
-  $c["db-host"] = "127.0.0.1"; $c["db-user"] = "root"; $c["db-password"] = "root";
-  $c["db-name"] = "magento_integration_tests";
   $engine = $argv[1];
-  $c["search-engine"] = $engine;
   $prefix = $engine === "opensearch" ? "opensearch" : "elasticsearch";
-  $c[$prefix . "-host"] = "127.0.0.1"; $c[$prefix . "-port"] = 9200;
+  $c = [
+      "db-host" => "127.0.0.1", "db-user" => "root", "db-password" => "root", "db-name" => "magento_integration_tests",
+      "db-prefix" => "", "backend-frontname" => "backend", "admin-user" => "user", "admin-password" => "password1",
+      "admin-email" => "admin@example.com", "admin-firstname" => "firstname", "admin-lastname" => "lastname",
+      "search-engine" => $engine, $prefix . "-host" => "127.0.0.1", $prefix . "-port" => 9200,
+      "consumers-wait-for-messages" => "0",
+  ];
   file_put_contents("etc/install-config-mysql.php", "<?php\nreturn " . var_export($c, true) . ";\n");
 ' "$SEARCH_ENGINE"
 cat etc/install-config-mysql.php
