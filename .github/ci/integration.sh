@@ -61,8 +61,9 @@ cp phpunit.xml.dist phpunit.xml
 echo "::endgroup::"
 
 echo "::group::Unit tests (Magento's unit test framework)"
-( cd "$MAGENTO_ROOT" && "$MODULE_DIR/.github/ci/logged.sh" "Unit $MAGENTO_VERSION" \
-    php -d memory_limit=-1 vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist "vendor/$package/Test/Unit" )
+# From dev/tests/unit like core's own runs: its PHPUnit extensions read their config relative to that folder.
+( cd "$MAGENTO_ROOT/dev/tests/unit" && "$MODULE_DIR/.github/ci/logged.sh" "Unit $MAGENTO_VERSION" \
+    php -d memory_limit=-1 ../../../vendor/bin/phpunit -c phpunit.xml.dist "../../../vendor/$package/Test/Unit" )
 echo "::endgroup::"
 
 echo "::group::Integration tests"
