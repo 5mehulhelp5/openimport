@@ -69,7 +69,7 @@ class Config
      */
     public function getAllowedHosts(): array
     {
-        return array_map('strtolower', $this->lines(self::XML_ALLOWED_HOSTS));
+        return array_values(array_unique(array_map('strtolower', $this->lines(self::XML_ALLOWED_HOSTS))));
     }
 
     /**

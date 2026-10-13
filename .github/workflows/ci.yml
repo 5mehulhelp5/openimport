@@ -114,7 +114,7 @@ jobs:
           tools: composer:v2
           extensions: bcmath, gd, intl, mbstring, pdo_mysql, soap, sockets, sodium, xsl, zip
           ini-values: memory_limit=-1
-      - run: .github/ci/integration.sh
+      - run: .github/ci/logged.sh "Unit + integration ${{ matrix.magento }} / PHP ${{ matrix.php }}" .github/ci/integration.sh
       - name: Test logs
         if: always()
         uses: actions/upload-artifact@v7

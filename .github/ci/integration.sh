@@ -25,6 +25,11 @@ for extra in ${EXTRA_PATH_PACKAGES:-}; do
   name="${extra%%=*}"; dir="${extra#*=}"
   composer config "repositories.${name//\//-}" '{"type":"path","url":"'"$dir"'","options":{"symlink":false,"versions":{"'"$name"'":"1.0.0"}}}'
 done
+# Composer 2.9+ refuses packages with security advisories while resolving; old Magento patch releases pin some of
+# them (league/flysystem 2.x on 2.4.7). CI only builds a throwaway test project, so resolve as Magento declares.
+php -r '$f = "composer.json"; $c = json_decode(file_get_contents($f), true);
+  $c["config"]["policy"]["advisories"]["block"] = false; $c["config"]["audit"]["block-insecure"] = false;
+  file_put_contents($f, json_encode($c, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");'
 composer config --no-plugins allow-plugins.magento/composer-dependency-version-audit-plugin false
 composer config --no-plugins allow-plugins.magento/* true
 composer config --no-plugins allow-plugins.laminas/laminas-dependency-plugin true
