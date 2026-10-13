@@ -19,3 +19,6 @@ All notable changes to this project are documented here. The format follows
   endings, price adjustment, dates, split/join, value maps) and a safe expression language with columns, arithmetic,
   comparisons and 14 functions, parsed once per run without eval. Own transforms can be added through di.xml. See
   docs/transforms.md.
+- Mapping engine: source columns, fixed values, transform chains, required fields, identifier checks, store-view
+  values as extra rows (with SKU, attribute set and type carried), auto-match with German and English synonyms and
+  store-view column names; row filters (include/exclude, all/any, 13 operators or expressions). See docs/mapping.md.

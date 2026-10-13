@@ -1,0 +1,82 @@
+<?php
+/**
+ * Copyright © Iman Aboheydary. All rights reserved.
+ * See LICENSE for license details (MIT).
+ */
+
+declare(strict_types=1);
+
+namespace Iranimij\OpenImport\Model\Entity;
+
+/**
+ * The import entities OpenImport supports, with their identifier columns. More can be added through di.xml
+ * (argument "entities"); an entity that is not listed is identified by its first mapped column.
+ */
+class EntityRegistry
+{
+    public const PRODUCT = 'catalog_product';
+    public const ADVANCED_PRICING = 'advanced_pricing';
+    public const CUSTOMER = 'customer';
+    public const CUSTOMER_ADDRESS = 'customer_address';
+    public const CUSTOMER_COMPOSITE = 'customer_composite';
+    public const STOCK_SOURCES = 'stock_sources';
+    public const STOCK_PRICE = 'openimport_stock_price';
+
+    /**
+     * @var array<string, EntityInfo>
+     */
+    private array $entities = [];
+
+    /**
+     * @param EntityInfo[] $entities
+     */
+    public function __construct(array $entities = [])
+    {
+        $productSynonyms = [
+            'artikelnummer' => 'sku', 'artikelnr' => 'sku', 'art nr' => 'sku', 'artnr' => 'sku', 'sku' => 'sku',
+            'bezeichnung' => 'name', 'artikelname' => 'name', 'produktname' => 'name', 'product name' => 'name',
+            'preis' => 'price', 'vk preis' => 'price', 'verkaufspreis' => 'price',
+            'bestand' => 'qty', 'menge' => 'qty', 'lagerbestand' => 'qty', 'stock' => 'qty', 'quantity' => 'qty',
+            'beschreibung' => 'description', 'kurzbeschreibung' => 'short_description', 'gewicht' => 'weight',
+            'sonderpreis' => 'special_price', 'hersteller' => 'manufacturer', 'farbe' => 'color',
+            'ean' => 'ean', 'gtin' => 'ean', 'kategorie' => 'categories', 'kategorien' => 'categories',
+            'bild' => 'base_image', 'image' => 'base_image', 'url key' => 'url_key',
+        ];
+        $customerSynonyms = [
+            'e mail' => 'email', 'mail' => 'email', 'vorname' => 'firstname', 'nachname' => 'lastname',
+            'first name' => 'firstname', 'last name' => 'lastname', 'telefon' => 'telephone', 'phone' => 'telephone',
+            'strasse' => 'street', 'straße' => 'street', 'plz' => 'postcode', 'zip' => 'postcode', 'ort' => 'city',
+            'stadt' => 'city', 'land' => 'country_id', 'country' => 'country_id', 'firma' => 'company',
+        ];
+        $builtIn = [
+            new EntityInfo(self::PRODUCT, ['sku'], true, ['sku', 'attribute_set_code', 'product_type'], $productSynonyms),
+            new EntityInfo(self::ADVANCED_PRICING, ['sku', 'tier_price_website', 'tier_price_customer_group',
+                'tier_price_qty'], false, [], $productSynonyms),
+            new EntityInfo(self::CUSTOMER, ['email', '_website'], false, [], $customerSynonyms),
+            new EntityInfo(self::CUSTOMER_ADDRESS, ['_email', '_website', '_entity_id'], false, [], $customerSynonyms),
+            new EntityInfo(self::CUSTOMER_COMPOSITE, ['email', '_website'], false, [], $customerSynonyms),
+            new EntityInfo(self::STOCK_SOURCES, ['sku', 'source_code'], false, [], $productSynonyms),
+            new EntityInfo(self::STOCK_PRICE, ['sku'], false, [], $productSynonyms),
+        ];
+        foreach (array_merge($builtIn, array_values($entities)) as $entity) {
+            $this->entities[$entity->code] = $entity;
+        }
+    }
+
+    /**
+     * @param string $code
+     * @return EntityInfo|null
+     */
+    public function get(string $code): ?EntityInfo
+    {
+        return $this->entities[$code] ?? null;
+    }
+
+    /**
+     * @return string[]
+     */
+    public function codes(): array
+    {
+        return array_keys($this->entities);
+    }
+}
