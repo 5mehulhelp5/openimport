@@ -13,8 +13,8 @@ Iman's Mac (`~/Projects/openimport-dev-env`, Warden) whenever the laptop is open
 
 | # | Slice | State |
 |---|---|---|
-| S1 | Skeleton on module-base: settings section `openimport` (runs, safety), ACL under System › Data Transfer, `Model\Config`, en_US + de_DE, MIT headers, NOTICE, mkdocs, CI (PHPCS, PHPStan 6, unit × 7, coverage gate, integration × 6 with OpenSearch, docs) | in progress: `feat/m0-s1-skeleton` |
-| S2 | Core-bridge spike: `MappedSource` + `CoreImporter`, oracle tests vs core CSV import (products, customers), error rows, history; `docs/core-bridge.md` | next |
+| S1 | Skeleton on module-base: settings section `openimport` (runs, safety), ACL under System › Data Transfer, `Model\Config`, en_US + de_DE, MIT headers, NOTICE, mkdocs, CI (PHPCS, PHPStan 6, unit × 7, coverage gate, integration × 6 with OpenSearch, docs) | pushed: PR #1 `feat/m0-s1-skeleton`, CI running |
+| S2 | Core-bridge spike: `MappedSource` + `CoreImporter`, oracle tests vs core CSV import (products, customers), error rows, history; `docs/core-bridge.md` | pushed: `feat/m0-s2-core-bridge` (stacked on S1), CI running |
 | S3 | `openimport-dev-env`: Warden fixture, SFTP + HTTP services, dataset generator, Playwright admin smoke, e2e workflow | open |
 | S4 | Baselines: benchmark workflow (10k / 50k products, 20k customers), `docs/baseline.md`, `docs/core-facts.md` | open |
 | S5 | Local browser and Playwright check on the Mac (non-blocking) | open |
@@ -22,7 +22,7 @@ Iman's Mac (`~/Projects/openimport-dev-env`, Warden) whenever the laptop is open
 
 ## Exact next step
 
-Push `feat/m0-s1-skeleton`, open the PR, watch CI; start S2 on top of it.
+Watch CI on PR #1 and the S2 PR; fill the evidence table in `docs/core-bridge.md` from the integration matrix. Then S3 (dev-env).
 
 ## Open questions
 
