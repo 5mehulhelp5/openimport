@@ -150,6 +150,7 @@
     "openimport_row_hash": {
         "column": {
             "profile_id": true,
+            "identifier_key": true,
             "identifier": true,
             "hash": true,
             "run_id": true

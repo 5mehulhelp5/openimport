@@ -106,7 +106,13 @@ class ProfileRepository implements ProfileRepositoryInterface
         $this->collectionProcessor->process($criteria, $collection);
         $results = $this->searchResultsFactory->create();
         $results->setSearchCriteria($criteria);
-        $results->setItems(array_values($collection->getItems()));
+        $items = [];
+        foreach ($collection->getItems() as $item) {
+            if ($item instanceof ProfileInterface) {
+                $items[] = $item;
+            }
+        }
+        $results->setItems($items);
         $results->setTotalCount($collection->getSize());
 
         return $results;

@@ -12,6 +12,9 @@ use Magento\Framework\App\ResourceConnection;
 
 /**
  * Delta hashes per profile and record (openimport_row_hash): what was last imported for an identifier.
+ *
+ * Rows are keyed by the SHA-1 of the identifier: the table's collation treats "A" and "Ä" (or "a") as equal, the
+ * delta must not.
  */
 class RowHashStore
 {
@@ -36,16 +39,20 @@ class RowHashStore
     public function fetch(int $profileId, array $identifiers): array
     {
         $connection = $this->resource->getConnection();
+        $keys = [];
+        foreach (array_unique($identifiers) as $identifier) {
+            $keys[$this->key((string) $identifier)] = (string) $identifier;
+        }
         $hashes = [];
-        foreach (array_chunk(array_values(array_unique($identifiers)), self::BATCH) as $chunk) {
+        foreach (array_chunk(array_keys($keys), self::BATCH) as $chunk) {
             $pairs = $connection->fetchPairs(
                 $connection->select()
-                    ->from($this->resource->getTableName(self::TABLE), ['identifier', 'hash'])
+                    ->from($this->resource->getTableName(self::TABLE), ['identifier_key', 'hash'])
                     ->where('profile_id = ?', $profileId)
-                    ->where('identifier IN (?)', $chunk)
+                    ->where('identifier_key IN (?)', $chunk)
             );
-            foreach ($pairs as $identifier => $hash) {
-                $hashes[(string) $identifier] = (string) $hash;
+            foreach ($pairs as $key => $hash) {
+                $hashes[$keys[(string) $key]] = (string) $hash;
             }
         }
 
@@ -64,6 +71,7 @@ class RowHashStore
         foreach ($hashes as $identifier => $hash) {
             $rows[] = [
                 'profile_id' => $profileId,
+                'identifier_key' => $this->key((string) $identifier),
                 'identifier' => mb_substr((string) $identifier, 0, 255),
                 'hash' => $hash,
                 'run_id' => $runId,
@@ -71,7 +79,11 @@ class RowHashStore
         }
         $connection = $this->resource->getConnection();
         foreach (array_chunk($rows, self::BATCH) as $chunk) {
-            $connection->insertOnDuplicate($this->resource->getTableName(self::TABLE), $chunk, ['hash', 'run_id']);
+            $connection->insertOnDuplicate(
+                $this->resource->getTableName(self::TABLE),
+                $chunk,
+                ['identifier', 'hash', 'run_id']
+            );
         }
     }
 
@@ -83,10 +95,11 @@ class RowHashStore
     public function delete(int $profileId, array $identifiers): void
     {
         $connection = $this->resource->getConnection();
-        foreach (array_chunk(array_values($identifiers), self::BATCH) as $chunk) {
+        $keys = array_map(fn (string $identifier): string => $this->key($identifier), array_values($identifiers));
+        foreach (array_chunk($keys, self::BATCH) as $chunk) {
             $connection->delete(
                 $this->resource->getTableName(self::TABLE),
-                ['profile_id = ?' => $profileId, 'identifier IN (?)' => $chunk]
+                ['profile_id = ?' => $profileId, 'identifier_key IN (?)' => $chunk]
             );
         }
     }
@@ -116,5 +129,10 @@ class RowHashStore
                 ->from($this->resource->getTableName(self::TABLE), ['COUNT(*)'])
                 ->where('profile_id = ?', $profileId)
         );
+    }
+
+    private function key(string $identifier): string
+    {
+        return sha1($identifier);
     }
 }

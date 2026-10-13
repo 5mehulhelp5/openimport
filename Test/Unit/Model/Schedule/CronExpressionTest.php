@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase;
 
 class CronExpressionTest extends TestCase
 {
-    private function at(string $time): \DateTimeImmutable
+    private function berlin(string $time): \DateTimeImmutable
     {
         return new \DateTimeImmutable($time, new \DateTimeZone('Europe/Berlin'));
     }
@@ -33,17 +33,17 @@ class CronExpressionTest extends TestCase
 
         $this->assertTimes(
             ['2026-10-14 02:00 Wed', '2026-10-15 02:00 Thu', '2026-10-16 02:00 Fri'],
-            $cron->next($this->at('2026-10-13 17:45'), 3)
+            $cron->next($this->berlin('2026-10-13 17:45'), 3)
         );
-        self::assertTrue($cron->matches($this->at('2026-10-13 02:00:59')));
-        self::assertFalse($cron->matches($this->at('2026-10-13 02:01')));
+        self::assertTrue($cron->matches($this->berlin('2026-10-13 02:00:59')));
+        self::assertFalse($cron->matches($this->berlin('2026-10-13 02:01')));
     }
 
     public function testWeekdaysAtSix(): void
     {
         $this->assertTimes(
             ['2026-10-16 06:00 Fri', '2026-10-19 06:00 Mon'],
-            (new CronExpression('0 6 * * mon-FRI'))->next($this->at('2026-10-15 06:00'), 2)
+            (new CronExpression('0 6 * * mon-FRI'))->next($this->berlin('2026-10-15 06:00'), 2)
         );
     }
 
@@ -51,15 +51,15 @@ class CronExpressionTest extends TestCase
     {
         $this->assertTimes(
             ['2026-10-13 08:00 Tue', '2026-10-13 08:15 Tue', '2026-10-13 08:30 Tue', '2026-10-13 08:45 Tue', '2026-10-13 10:00 Tue'],
-            (new CronExpression('*/15 8-18/2 * * *'))->next($this->at('2026-10-13 07:59'), 5)
+            (new CronExpression('*/15 8-18/2 * * *'))->next($this->berlin('2026-10-13 07:59'), 5)
         );
         $this->assertTimes(
             ['2026-11-01 00:05 Sun', '2026-11-15 00:05 Sun', '2027-01-01 00:05 Fri'],
-            (new CronExpression('5 0 1,15 jan,NOV *'))->next($this->at('2026-10-13 00:00'), 3)
+            (new CronExpression('5 0 1,15 jan,NOV *'))->next($this->berlin('2026-10-13 00:00'), 3)
         );
         $this->assertTimes(
             ['2026-10-13 00:30 Tue', '2026-10-13 00:50 Tue'],
-            (new CronExpression('30/20 0 * * *'))->next($this->at('2026-10-13 00:00'), 2)
+            (new CronExpression('30/20 0 * * *'))->next($this->berlin('2026-10-13 00:00'), 2)
         );
     }
 
@@ -68,11 +68,11 @@ class CronExpressionTest extends TestCase
         // Either the 1st or a Sunday (Vixie cron), and 7 is Sunday too.
         $this->assertTimes(
             ['2026-10-18 12:00 Sun', '2026-10-25 12:00 Sun', '2026-11-01 12:00 Sun', '2026-11-08 12:00 Sun'],
-            (new CronExpression('0 12 1 * 7'))->next($this->at('2026-10-13 00:00'), 4)
+            (new CronExpression('0 12 1 * 7'))->next($this->berlin('2026-10-13 00:00'), 4)
         );
         $this->assertTimes(
             ['2026-11-01 12:00 Sun', '2026-12-01 12:00 Tue'],
-            (new CronExpression('0 12 1 * ?'))->next($this->at('2026-10-13 00:00'), 2)
+            (new CronExpression('0 12 1 * ?'))->next($this->berlin('2026-10-13 00:00'), 2)
         );
     }
 
@@ -80,13 +80,13 @@ class CronExpressionTest extends TestCase
     {
         $this->assertTimes(
             ['2028-02-29 00:00 Tue'],
-            (new CronExpression('0 0 29 2 *'))->next($this->at('2026-10-13 00:00'))
+            (new CronExpression('0 0 29 2 *'))->next($this->berlin('2026-10-13 00:00'))
         );
     }
 
     public function testImpossibleDateFindsNothing(): void
     {
-        self::assertSame([], (new CronExpression('0 0 31 2 *'))->next($this->at('2026-10-13 00:00')));
+        self::assertSame([], (new CronExpression('0 0 31 2 *'))->next($this->berlin('2026-10-13 00:00')));
     }
 
     public function testExpressionIsNormalized(): void
