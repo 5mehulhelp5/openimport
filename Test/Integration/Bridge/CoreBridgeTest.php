@@ -36,9 +36,8 @@ use PHPUnit\Framework\TestCase;
  * Each import uses its own SKU / e-mail prefix, so both results live side by side and are compared after stripping
  * the prefix.
  *
- * @magentoDbIsolation disabled
- * @magentoAppIsolation enabled
- * @magentoAppArea adminhtml
+ * Isolation and area are set with attributes only: Magento's test framework reads attributes and docblock
+ * annotations on every supported version and refuses a test that has both.
  */
 #[AppArea('adminhtml')]
 #[DbIsolation(false)]
