@@ -14,5 +14,17 @@ if [ "$status" -ne 0 ]; then
     | tail -n 60 | tail -c 3500 \
     | awk 'BEGIN { ORS = "" } { gsub(/%/, "%25"); gsub(/\r/, "%0D"); print $0 "%0A" }' > "$log.tail"
   echo "::error title=${title} (exit ${status})::$(cat "$log.tail")"
+  # PHPUnit: one more annotation per failed test (its own 1,500 characters, long lines cut), so a failure with a big
+  # message (an HTML page) does not push the others out of the tail.
+  if command -v php >/dev/null; then
+    php -r '
+      $text = preg_replace("/\x1B\[[0-9;]*[A-Za-z]/", "", file_get_contents($argv[1]));
+      if (!preg_match_all("/^\d+\) [^\n]+\n.*?(?=^\d+\) |^(FAILURES|ERRORS|OK, but)|\z)/ms", $text, $m)) { exit(0); }
+      foreach (array_slice($m[0], 0, 10) as $block) {
+        $lines = array_map(static fn ($l) => strlen($l) > 300 ? substr($l, 0, 300) . " …" : $l, explode("\n", trim($block)));
+        $body = substr(implode("\n", $lines), 0, 1500);
+        echo "::error title=" . str_replace(["%", ":", ","], ["%25", "%3A", "%2C"], substr(strtok($block, "\n"), 0, 120)) . "::" . str_replace(["%", "\r", "\n"], ["%25", "%0D", "%0A"], $body) . "\n";
+      }' "$log"
+  fi
 fi
 exit "$status"
