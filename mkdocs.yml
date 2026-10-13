@@ -7,6 +7,7 @@ docs_dir: docs
 strict: true
 nav:
   - Home: index.md
+  - File formats: file-formats.md
   - Developers:
       - Core bridge: core-bridge.md
       - Core facts: core-facts.md
