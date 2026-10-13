@@ -1,0 +1,186 @@
+{
+    "openimport_profile": {
+        "column": {
+            "profile_id": true,
+            "name": true,
+            "direction": true,
+            "entity": true,
+            "is_active": true,
+            "source_type": true,
+            "source_config": true,
+            "format": true,
+            "format_options": true,
+            "behavior": true,
+            "on_error": true,
+            "allowed_errors": true,
+            "delta": true,
+            "safety_threshold": true,
+            "schedule": true,
+            "after_success": true,
+            "notify": true,
+            "notify_emails": true,
+            "row_filters": true,
+            "export_options": true,
+            "created_by": true,
+            "created_at": true,
+            "updated_at": true
+        },
+        "index": {
+            "OPENIMPORT_PROFILE_IS_ACTIVE": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_PROFILE_NAME": true
+        }
+    },
+    "openimport_mapping": {
+        "column": {
+            "mapping_id": true,
+            "profile_id": true,
+            "position": true,
+            "target": true,
+            "source": true,
+            "static_value": true,
+            "transforms": true,
+            "is_required": true,
+            "value_map_case_sensitive": true,
+            "value_map_strict": true
+        },
+        "index": {
+            "OPENIMPORT_MAPPING_PROFILE_ID_POSITION": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_MAPPING_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID": true
+        }
+    },
+    "openimport_value_map": {
+        "column": {
+            "value_map_id": true,
+            "profile_id": true,
+            "target": true,
+            "from_value": true,
+            "to_value": true,
+            "position": true
+        },
+        "index": {
+            "OPENIMPORT_VALUE_MAP_PROFILE_ID_TARGET": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_VALUE_MAP_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID": true
+        }
+    },
+    "openimport_run": {
+        "column": {
+            "run_id": true,
+            "profile_id": true,
+            "profile_name": true,
+            "direction": true,
+            "entity": true,
+            "run_trigger": true,
+            "mode": true,
+            "status": true,
+            "count_read": true,
+            "count_filtered": true,
+            "count_unchanged": true,
+            "count_skipped": true,
+            "count_invalid": true,
+            "count_created": true,
+            "count_updated": true,
+            "count_deleted": true,
+            "count_errors": true,
+            "count_exported": true,
+            "progress_rows": true,
+            "peak_memory_mb": true,
+            "source_file": true,
+            "output_file": true,
+            "options": true,
+            "message": true,
+            "requested_by": true,
+            "parent_run_id": true,
+            "created_at": true,
+            "started_at": true,
+            "finished_at": true
+        },
+        "index": {
+            "OPENIMPORT_RUN_PROFILE_ID_CREATED_AT": true,
+            "OPENIMPORT_RUN_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_RUN_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID": true
+        }
+    },
+    "openimport_run_error": {
+        "column": {
+            "error_id": true,
+            "run_id": true,
+            "source_row": true,
+            "identifier": true,
+            "field": true,
+            "message": true,
+            "source_data": true
+        },
+        "index": {
+            "OPENIMPORT_RUN_ERROR_RUN_ID_SOURCE_ROW": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_RUN_ERROR_RUN_ID_OPENIMPORT_RUN_RUN_ID": true
+        }
+    },
+    "openimport_run_preview": {
+        "column": {
+            "preview_id": true,
+            "run_id": true,
+            "identifier": true,
+            "change_type": true,
+            "diff": true,
+            "source_row": true
+        },
+        "index": {
+            "OPENIMPORT_RUN_PREVIEW_RUN_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_RUN_PREVIEW_RUN_ID_OPENIMPORT_RUN_RUN_ID": true
+        }
+    },
+    "openimport_row_hash": {
+        "column": {
+            "profile_id": true,
+            "identifier": true,
+            "hash": true,
+            "run_id": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_ROW_HASH_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID": true
+        }
+    },
+    "openimport_lock": {
+        "column": {
+            "lock_name": true,
+            "run_id": true,
+            "acquired_at": true,
+            "heartbeat_at": true
+        },
+        "constraint": {
+            "PRIMARY": true
+        }
+    },
+    "openimport_export_mark": {
+        "column": {
+            "profile_id": true,
+            "entity_type": true,
+            "entity_id": true,
+            "run_id": true,
+            "exported_at": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "OPENIMPORT_EXPORT_MARK_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID": true
+        }
+    }
+}

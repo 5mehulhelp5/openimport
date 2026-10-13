@@ -73,6 +73,29 @@ class EntityRegistry
     }
 
     /**
+     * The entity, or for an entity OpenImport does not know (a Commerce-only one): identified by its first mapped
+     * default field.
+     *
+     * @param string $code
+     * @param \Iranimij\OpenImport\Model\Mapping\FieldMapping[] $fields
+     * @return EntityInfo
+     */
+    public function resolve(string $code, array $fields): EntityInfo
+    {
+        $known = $this->get($code);
+        if ($known !== null) {
+            return $known;
+        }
+        foreach ($fields as $field) {
+            if ($field->storeView() === null && $field->target !== '') {
+                return new EntityInfo($code, [$field->target]);
+            }
+        }
+
+        return new EntityInfo($code, []);
+    }
+
+    /**
      * @return string[]
      */
     public function codes(): array
