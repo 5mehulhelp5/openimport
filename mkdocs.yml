@@ -8,6 +8,7 @@ strict: true
 nav:
   - Home: index.md
   - File formats: file-formats.md
+  - Transforms and expressions: transforms.md
   - Developers:
       - Core bridge: core-bridge.md
       - Core facts: core-facts.md

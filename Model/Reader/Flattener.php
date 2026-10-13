@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Iranimij\OpenImport\Model\Reader;
 
+use Iranimij\OpenImport\Model\Value\NumberText;
+
 /**
  * Flattens one structured record (JSON object, XML element) into columns:
  * nested objects become "parent.child", lists of plain values are joined with a comma, lists of objects are kept as

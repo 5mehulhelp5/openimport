@@ -19,8 +19,8 @@ Iman's Mac (`~/Projects/openimport-dev-env`, Warden) whenever the laptop is open
 
 | # | Slice | State |
 |---|---|---|
-| S1 | Readers: CSV/TSV, XLSX (own), JSON, XML, format detection, `docs/file-formats.md`; 50k baseline | PR open: `feat/m1-s1-readers` |
-| S2 | Transforms and the safe expression language, value maps | open |
+| S1 | Readers: CSV/TSV, XLSX (own), JSON, XML, format detection, `docs/file-formats.md`; 50k baseline | PR #4 |
+| S2 | Transforms and the safe expression language, value maps, number parsing, `docs/transforms.md` | PR open: `feat/m1-s2-transforms` |
 | S3 | Mapping, row filters, store-view expansion, behaviours (only add / only update) | open |
 | S4 | Schema: profile, run, run_error, run_preview, row_hash, lock; repositories | open |
 | S5 | Pipeline runner, errors mapped to source rows, dry-run preview, delta hashes | open |
@@ -30,7 +30,7 @@ Iman's Mac (`~/Projects/openimport-dev-env`, Warden) whenever the laptop is open
 
 ## Exact next step
 
-Merge S1 when CI is green; S2 (transforms) on `feat/m1-s2-transforms`.
+Merge S1 and S2 when CI is green; S3 (mapping, row filters, store views, behaviours) on `feat/m1-s3-mapping`.
 
 ## Open questions
 
