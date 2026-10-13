@@ -1,0 +1,41 @@
+name: Bug report
+description: An import or export gives a wrong result, fails, or something errors
+labels: [bug]
+body:
+  - type: input
+    id: versions
+    attributes:
+      label: Versions
+      description: Magento/Mage-OS, PHP, OpenImport, MSI on or off
+      placeholder: "Magento 2.4.8-p5, PHP 8.3, OpenImport 1.0.0, MSI enabled"
+    validations:
+      required: true
+  - type: dropdown
+    id: entity
+    attributes:
+      label: Entity
+      options: [Products, Stock & prices, Advanced pricing, Customers, Customer addresses, Stock sources (MSI), Orders (export), Other]
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: A 10-row sample of your file
+      description: Remove personal data first. Attach the file or paste it.
+    validations:
+      required: true
+  - type: textarea
+    id: profile
+    attributes:
+      label: Profile settings
+      description: Output of `bin/magento openimport:profiles:export --id=<profile id>` (secrets are never exported), or a description
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual result
+    validations:
+      required: true
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `bin/magento openimport:doctor` (if available)

@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Iman Aboheydary. All rights reserved.
+ * See LICENSE for license details (MIT).
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+    <default>
+        <openimport>
+            <general>
+                <keep_files_days>14</keep_files_days>
+                <max_errors_per_run>10000</max_errors_per_run>
+                <cron_time_budget>240</cron_time_budget>
+            </general>
+            <security>
+                <allowed_hosts/>
+                <allowed_folders/>
+                <formula_guard>1</formula_guard>
+                <safety_threshold_percent>10</safety_threshold_percent>
+            </security>
+        </openimport>
+    </default>
+</config>

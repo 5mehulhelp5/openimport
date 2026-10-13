@@ -1,0 +1,63 @@
+{
+    "name": "iranimij/openimport",
+    "description": "OpenImport: import and export for Magento 2 with profiles, column mapping, value transforms, a dry run that previews every change, schedules and remote sources (SFTP, FTP, URL). Built on Magento's own import engine. Free and MIT.",
+    "type": "magento2-module",
+    "license": "MIT",
+    "keywords": [
+        "magento2",
+        "mage-os",
+        "import",
+        "export",
+        "scheduled-import",
+        "csv",
+        "xlsx",
+        "sftp",
+        "openimport"
+    ],
+    "homepage": "https://github.com/iranimij/openimport",
+    "support": {
+        "issues": "https://github.com/iranimij/openimport/issues",
+        "source": "https://github.com/iranimij/openimport",
+        "docs": "https://github.com/iranimij/openimport/tree/main/docs"
+    },
+    "authors": [
+        {
+            "name": "Iman Aboheydary",
+            "homepage": "https://github.com/iranimij"
+        }
+    ],
+    "require": {
+        "php": "~8.2.0 || ~8.3.0 || ~8.4.0",
+        "ext-xmlreader": "*",
+        "ext-zip": "*",
+        "iranimij/module-base": "^1.0",
+        "magento/framework": "^103.0.7",
+        "magento/module-backend": "^102.0.7",
+        "magento/module-config": "^101.2.7",
+        "magento/module-import-export": "^101.0.7",
+        "magento/module-store": "^101.1.7"
+    },
+    "require-dev": {
+        "magento/module-catalog-import-export": "^101.1.7",
+        "magento/module-customer-import-export": "^100.4.7"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Iranimij\\OpenImport\\": ""
+        }
+    },
+    "extra": {
+        "iranimij": {
+            "changelog": "https://github.com/iranimij/openimport/blob/main/CHANGELOG.md"
+        },
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    }
+}
