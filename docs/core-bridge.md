@@ -27,7 +27,7 @@ id, so core's updates land on OpenImport's row on every version, never on someon
 under System › Data Transfer › Import History with its summary. The history row has no downloadable file yet
 (M1 writes the mapped rows there).
 
-## Evidence (filled from CI)
+## Evidence
 
 `Test/Integration/Bridge/CoreBridgeTest.php` imports the same rows twice, once through core's CSV source (the admin
 path) and once through `MappedSource`, and compares the results field by field:
@@ -36,14 +36,32 @@ path) and once through `MappedSource`, and compares the results field by field:
   Individually", a store-view row; updates including `__EMPTY__VALUE__`; Replace and Delete;
 - customers;
 - dry run: nothing written, no bunch left behind;
-- invalid rows: reported with their 0-based position; valid rows imported with "skip errors", nothing imported
-  with "stop on error";
+- invalid rows with "skip errors": reported with their 0-based position, same outcome as core's CSV import; nothing
+  imported with "stop on error";
 - import history row written and completed.
 
-| Magento | PHP | Result | Decision |
-|---|---|---|---|
-| 2.4.7-p10 | 8.2, 8.3 | pending | |
-| 2.4.8-p5 | 8.3, 8.4 | pending | |
-| 2.4.9 | 8.3, 8.4 | pending | |
+| Magento | PHP | Result (CI run [38402758703](https://github.com/iranimij/openimport/actions/runs/38402758703)) |
+|---|---|---|
+| 2.4.7-p10 | 8.2, 8.3 | 11 / 11 green |
+| 2.4.8-p5 | 8.2, 8.3, 8.4 | 11 / 11 green |
+| 2.4.9 | 8.3, 8.4 | 11 / 11 green |
 
-The temporary-CSV fallback planned in 02 · Architecture is only built if a version fails here.
+**Decision:** `MappedSource` straight into core on every supported version. The temporary-CSV fallback planned in
+02 · Architecture is not needed and is not built.
+
+## What the spike found
+
+1. **Core's error aggregator is shared.** `ProcessingErrorAggregator` is a DI singleton. Core runs one import per
+   admin request; OpenImport runs many per process (cron, CLI). Without `clear()` before each run, errors of earlier
+   runs counted against the next run and stopped valid imports. `CoreImporter` clears it first.
+2. **Store-view rows of new products need `attribute_set_code` and `product_type`.** Core validates every row of a
+   product that is new in the file as a new product. A store-view row with only `sku`, `store_view_code` and `name`
+   is refused ("Product Type is invalid or not supported"), through the CSV source as well. OpenImport's
+   store-view expansion (M1) copies both onto the rows it generates.
+3. **An empty cell in a required attribute's column is an error, also for existing products.** A file with a `name`
+   or `price` column must fill it on every row. The mapping preview (M1) flags such rows before core sees them.
+4. **Validated bunches stay in `importexport_importdata` unless removed.** Removed by id after every run.
+5. **Core's history update targets "the last row of this admin user"** (2.4.7, 2.4.8) or `_import_history_id`
+   (2.4.9). Adding OpenImport's own row right before the import and passing its id works on all three.
+6. **Core reports 0-based positions of the rows it received.** Mapping back to source line numbers is M1 (rows can be
+   filtered out or expanded into store-view rows on the way).
