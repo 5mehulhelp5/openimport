@@ -18,7 +18,7 @@ value; the rest of the file still imports.
 | `strip_html` | – | `<p>Soft &amp; warm</p>` → `Soft & warm` |
 | `prefix`, `suffix` | text | `prefix("DE-")`: `42` → `DE-42` (empty values stay empty) |
 | `default` | value | used when the value is empty |
-| `split` | separator, position (1 = first, -1 = last) | `split("|", 2)`: `a|b|c` → `b` |
+| `split` | separator, position (1 = first, -1 = last) | `split(";", 2)`: `a;b;c` → `b` |
 | `join` | separator, column, … | `join(" ", "Brand")`: `Shirt` → `Shirt ACME`; empty parts are left out |
 
 Regex patterns are written without delimiters and are Unicode-aware; `(?i)` at the start ignores case. A pattern
