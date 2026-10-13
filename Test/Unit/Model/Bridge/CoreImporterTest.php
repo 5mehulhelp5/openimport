@@ -90,6 +90,7 @@ class CoreImporterTest extends TestCase
         $this->import->method('isImportAllowed')->willReturn(true);
         $this->import->expects(self::never())->method('importSource');
         $this->history->expects(self::never())->method('addReport');
+        $this->aggregator->expects(self::once())->method('clear');
         $this->aggregator->method('getInvalidRowsCount')->willReturn(1);
         $this->aggregator->method('getAllErrors')->willReturn([
             $this->error('invalidValue', 1, 'price', 'Value for price is not valid', ProcessingError::ERROR_LEVEL_CRITICAL),

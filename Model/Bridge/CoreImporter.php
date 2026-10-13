@@ -22,6 +22,10 @@ use Magento\ImportExport\Model\ResourceModel\Import\Data as ImportData;
  * - Live run: a row in core's import history (so the run shows up under System › Data Transfer › Import History and
  *   core's history updates land on it instead of on someone else's import), import, invalidate the affected
  *   indexers like the admin import does, then remove this run's bunches.
+ *
+ * Core's error aggregator is a shared instance (one import per admin request in core). OpenImport runs several
+ * imports in one process (cron, CLI), so it is cleared before every run; otherwise errors of earlier runs count
+ * against this run's allowed errors (M0 spike finding).
  */
 class CoreImporter
 {
@@ -50,6 +54,7 @@ class CoreImporter
         /** @var CoreImport $import */
         $import = $this->importFactory->create();
         $import->setData($request->toImportData());
+        $import->getErrorAggregator()->clear();
 
         $bunchIds = [];
         try {

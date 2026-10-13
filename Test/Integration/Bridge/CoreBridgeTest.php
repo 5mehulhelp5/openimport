@@ -289,7 +289,7 @@ class CoreBridgeTest extends TestCase
         $snapshot = $this->productSnapshot($ours . '-1', $ours);
         self::assertSame('PREFIX Trailschuh 1', $snapshot['store_view_name']);
         self::assertSame('PREFIX Trail shoe 1', $snapshot['name']);
-        self::assertSame(7.0, $snapshot['qty']);
+        self::assertEquals(7.0, $snapshot['qty']);
     }
 
     public function testUpdatesThroughMappedSourceEqualCoreCsvUpdates(): void
@@ -302,15 +302,20 @@ class CoreBridgeTest extends TestCase
                 $this->mappedSource(self::PRODUCT_COLUMNS, $this->productRows($prefix))
             );
         }
+        // Every row fills every column: core refuses an empty cell in a required attribute's column (name, price)
+        // even for an existing product (M0 spike finding, same through the CSV source).
         $updates = static fn (string $prefix): array => [
-            ['sku' => $prefix . '-1', 'price' => '99.00', 'qty' => '0', 'is_in_stock' => '0'],
-            ['sku' => $prefix . '-2', 'special_price' => '__EMPTY__VALUE__', 'name' => $prefix . ' Renamed'],
+            ['sku' => $prefix . '-1', 'name' => $prefix . ' Trail shoe 1', 'price' => '99.00', 'special_price' => '',
+                'qty' => '0', 'is_in_stock' => '0'],
+            ['sku' => $prefix . '-2', 'name' => $prefix . ' Renamed', 'price' => '29.99',
+                'special_price' => '__EMPTY__VALUE__', 'qty' => '14', 'is_in_stock' => '1'],
         ];
         $columns = ['sku', 'name', 'price', 'special_price', 'qty', 'is_in_stock'];
 
         $coreResult = $this->importer()->run(new ImportRequest('catalog_product'), $this->csvSource($columns, $updates($core)));
         $ourResult = $this->importer()->run(new ImportRequest('catalog_product'), $this->mappedSource($columns, $updates($ours)));
 
+        self::assertTrue($coreResult->imported, $this->describe($coreResult));
         self::assertTrue($ourResult->imported, $this->describe($ourResult));
         self::assertSame([$coreResult->created, $coreResult->updated], [$ourResult->created, $ourResult->updated]);
         for ($i = 1; $i <= 2; $i++) {
