@@ -9,6 +9,7 @@ nav:
   - Home: index.md
   - Developers:
       - Core bridge: core-bridge.md
+      - Core facts: core-facts.md
 theme:
   name: readthedocs
 markdown_extensions:
