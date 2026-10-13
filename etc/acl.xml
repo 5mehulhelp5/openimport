@@ -16,7 +16,7 @@
                             <resource id="Iranimij_OpenImport::profiles" title="View profiles" translate="title" sortOrder="10"/>
                             <resource id="Iranimij_OpenImport::profiles_edit" title="Create and edit profiles" translate="title" sortOrder="20"/>
                             <resource id="Iranimij_OpenImport::run" title="Run profiles (dry run and live)" translate="title" sortOrder="30"/>
-                            <resource id="Iranimij_OpenImport::run_destructive" title="Confirm runs above the safety limit (Replace, Delete)" translate="title" sortOrder="40"/>
+                            <resource id="Iranimij_OpenImport::run_destructive" title="Confirm runs above the safety limit" translate="title" sortOrder="40"/>
                             <resource id="Iranimij_OpenImport::runs" title="View runs and error reports" translate="title" sortOrder="50"/>
                         </resource>
                     </resource>
