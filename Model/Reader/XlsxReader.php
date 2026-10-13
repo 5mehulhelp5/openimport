@@ -8,6 +8,8 @@ declare(strict_types=1);
 
 namespace Iranimij\OpenImport\Model\Reader;
 
+use Iranimij\OpenImport\Model\Value\NumberText;
+
 /**
  * Streams one sheet of an Excel workbook (.xlsx) without any library: the workbook is a ZIP archive of XML parts,
  * read with ZipArchive and XMLReader (both required by Magento).

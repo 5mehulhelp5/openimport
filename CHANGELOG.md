@@ -15,3 +15,7 @@ All notable changes to this project are documented here. The format follows
 - File readers for CSV/TSV (delimiter and encoding detection, UTF-16, Windows-1252), Excel .xlsx (own streaming
   reader, dates, sheet choice), JSON (record path, nested fields as dotted columns) and XML (streaming, record path,
   attributes, no DOCTYPE); format detection from the file name or content. See docs/file-formats.md.
+- Transforms for mapped fields (text, regex, HTML stripping, numbers with decimal commas, math, rounding with price
+  endings, price adjustment, dates, split/join, value maps) and a safe expression language with columns, arithmetic,
+  comparisons and 14 functions, parsed once per run without eval. Own transforms can be added through di.xml. See
+  docs/transforms.md.

@@ -6,7 +6,7 @@
 
 declare(strict_types=1);
 
-namespace Iranimij\OpenImport\Model\Reader;
+namespace Iranimij\OpenImport\Model\Value;
 
 /**
  * Writes a float as a plain decimal the way a person would type it: 15 significant digits (no binary noise such as

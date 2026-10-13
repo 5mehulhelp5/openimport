@@ -6,9 +6,9 @@
 
 declare(strict_types=1);
 
-namespace Iranimij\OpenImport\Test\Unit\Model\Reader;
+namespace Iranimij\OpenImport\Test\Unit\Model\Value;
 
-use Iranimij\OpenImport\Model\Reader\NumberText;
+use Iranimij\OpenImport\Model\Value\NumberText;
 use PHPUnit\Framework\TestCase;
 
 class NumberTextTest extends TestCase
