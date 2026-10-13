@@ -31,8 +31,8 @@ composer config --no-plugins allow-plugins.laminas/laminas-dependency-plugin tru
 composer config --no-plugins allow-plugins.dealerdirect/phpcodesniffer-composer-installer true
 composer config --no-plugins allow-plugins.php-http/discovery true
 composer require --no-update --no-interaction "$package:1.0.0"
-composer install --no-interaction --no-progress --prefer-dist \
-  || { echo "composer install failed, retrying once"; composer clear-cache; composer install --no-interaction --no-progress --prefer-dist; }
+"$MODULE_DIR/.github/ci/logged.sh" "composer install" composer install --no-interaction --no-progress --prefer-dist \
+  || { echo "composer install failed, retrying once"; composer clear-cache; "$MODULE_DIR/.github/ci/logged.sh" "composer install (retry)" composer install --no-interaction --no-progress --prefer-dist; }
 echo "::endgroup::"
 
 echo "::group::Test framework configuration ($SEARCH_ENGINE)"
@@ -54,6 +54,12 @@ cat etc/install-config-mysql.php
 cp phpunit.xml.dist phpunit.xml
 echo "::endgroup::"
 
+echo "::group::Unit tests (Magento's unit test framework)"
+( cd "$MAGENTO_ROOT" && "$MODULE_DIR/.github/ci/logged.sh" "Unit $MAGENTO_VERSION" \
+    php -d memory_limit=-1 vendor/bin/phpunit -c dev/tests/unit/phpunit.xml.dist "vendor/$package/Test/Unit" )
+echo "::endgroup::"
+
 echo "::group::Integration tests"
-php -d memory_limit=-1 ../../../vendor/bin/phpunit -c phpunit.xml ${PHPUNIT_ARGS:-} "../../../vendor/$package/Test/Integration"
+"$MODULE_DIR/.github/ci/logged.sh" "Integration $MAGENTO_VERSION" \
+  php -d memory_limit=-1 ../../../vendor/bin/phpunit -c phpunit.xml ${PHPUNIT_ARGS:-} "../../../vendor/$package/Test/Integration"
 echo "::endgroup::"
