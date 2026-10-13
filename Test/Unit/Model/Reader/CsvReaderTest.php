@@ -182,8 +182,8 @@ class CsvReaderTest extends TestCase
     {
         $reader = new CsvReader($this->tempFile("a\n1\n2\n"));
 
-        self::assertCount(2, $reader->rows());
-        self::assertCount(2, $reader->rows());
+        self::assertCount(2, iterator_to_array($reader->rows()));
+        self::assertCount(2, iterator_to_array($reader->rows()));
     }
 
     public function testMissingFileIsRefused(): void

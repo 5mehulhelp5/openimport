@@ -67,7 +67,7 @@ XML;
     {
         $reader = new XmlReader($this->tempFile(self::CATALOG, 'xml'), new ReaderOptions(recordPath: '//product'));
 
-        self::assertCount(2, $reader->rows());
+        self::assertCount(2, iterator_to_array($reader->rows()));
     }
 
     public function testWithoutAPathTheRootChildrenAreRecords(): void
@@ -119,8 +119,8 @@ XML;
     {
         $reader = new XmlReader($this->tempFile(self::CATALOG, 'xml'), new ReaderOptions(recordPath: '//product'));
 
-        self::assertCount(2, $reader->rows());
-        self::assertCount(2, $reader->rows());
+        self::assertCount(2, iterator_to_array($reader->rows()));
+        self::assertCount(2, iterator_to_array($reader->rows()));
     }
 
     public function testMissingFileIsRefused(): void
