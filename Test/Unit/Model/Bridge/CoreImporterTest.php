@@ -217,6 +217,62 @@ class CoreImporterTest extends TestCase
         self::assertSame([['importexport_importdata', ['id IN (?)' => [5]]]], $this->deletes);
     }
 
+    public function testSkipErrorsLeavesOutRowsWithCriticalErrorsAndValidatesAgain(): void
+    {
+        $seen = [];
+        $this->import->method('validateSource')->willReturnCallback(static function ($source) use (&$seen): bool {
+            $skus = [];
+            foreach ($source as $row) {
+                $skus[] = $row['sku'];
+            }
+            $seen[] = $skus;
+
+            return true;
+        });
+        $this->import->method('getBunchIds')->willReturnOnConsecutiveCalls([1], [2]);
+        $this->import->method('isImportAllowed')->willReturn(true);
+        $this->import->method('importSource')->willReturn(true);
+        $this->import->method('getCreatedItemsCount')->willReturn(2);
+        $this->history->method('getId')->willReturn(9);
+        $this->aggregator->method('hasFatalExceptions')->willReturnOnConsecutiveCalls(true, false);
+        $this->aggregator->method('getInvalidRowsCount')->willReturn(0);
+        $this->aggregator->method('getAllErrors')->willReturnOnConsecutiveCalls(
+            [$this->error('invalidAttrSet', 1, 'attribute_set_code', 'No such set', ProcessingError::ERROR_LEVEL_CRITICAL)],
+            [$this->error('notice', 1, 'name', 'Looks odd', ProcessingError::ERROR_LEVEL_NOT_CRITICAL)]
+        );
+        $source = new MappedSource(['sku'], static fn (): array => [['sku' => 'A'], ['sku' => 'B'], ['sku' => 'C']]);
+
+        $result = $this->importer->run(new ImportRequest('catalog_product', skipErrors: true, allowedErrors: 10), $source);
+
+        self::assertSame([['A', 'B', 'C'], ['A', 'C']], $seen);
+        self::assertTrue($result->imported);
+        self::assertSame(2, $result->created);
+        self::assertSame(1, $result->invalidRows);
+        self::assertSame([1, 2], array_map(static fn ($error): ?int => $error->row, $result->errors), 'rows of the original source');
+        self::assertSame(
+            [['importexport_importdata', ['id IN (?)' => [1]]], ['importexport_importdata', ['id IN (?)' => [2]]]],
+            $this->deletes
+        );
+    }
+
+    public function testSkipErrorsDoesNotImportWhenACriticalErrorHasNoRow(): void
+    {
+        $this->import->method('validateSource')->willReturn(true);
+        $this->import->method('getBunchIds')->willReturn([4]);
+        $this->import->method('isImportAllowed')->willReturn(true);
+        $this->import->expects(self::never())->method('importSource');
+        $this->aggregator->method('hasFatalExceptions')->willReturn(true);
+        $this->aggregator->method('getAllErrors')->willReturn(
+            [$this->error('systemException', null, null, 'Broken', ProcessingError::ERROR_LEVEL_CRITICAL)]
+        );
+
+        $result = $this->importer->run(new ImportRequest('catalog_product', skipErrors: true), $this->source());
+
+        self::assertFalse($result->valid);
+        self::assertFalse($result->imported);
+        self::assertSame('Broken', $result->errors[0]->message);
+    }
+
     public function testRequestMapsToCoreImportData(): void
     {
         $data = (new ImportRequest('customer', Import::BEHAVIOR_DELETE, false, false, 2, '|', '__CLEAR__', 'supplier'))

@@ -65,3 +65,9 @@ path) and once through `MappedSource`, and compares the results field by field:
    (2.4.9). Adding OpenImport's own row right before the import and passing its id works on all three.
 6. **Core reports 0-based positions of the rows it received.** Mapping back to source line numbers is M1 (rows can be
    filtered out or expanded into store-view rows on the way).
+7. **"Skip rows with errors" skips everything after one critical error.** Core's row errors are critical by default,
+   and the product, customer and other entities stop saving every row once the aggregator holds a critical error
+   (`hasToBeTerminated()`), even with the skip-errors strategy, while the import still reports success (found in
+   M1). With *Skip rows with errors*, OpenImport leaves the rows core rejected out (`SkipRowsSource`), validates the
+   rest again and imports that; errors of every pass still point at the original rows. At most four validation
+   passes; a critical error without a row stops the run with nothing imported.
