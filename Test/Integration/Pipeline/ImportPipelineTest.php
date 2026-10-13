@@ -36,13 +36,15 @@ use PHPUnit\Framework\TestCase;
 class ImportPipelineTest extends TestCase
 {
     /**
-     * @var string[]
+     * Nullable: the 2.4.7 test framework resets test properties to null after each test.
+     *
+     * @var string[]|null
      */
-    private array $files = [];
+    private ?array $files = [];
 
     protected function tearDown(): void
     {
-        foreach ($this->files as $file) {
+        foreach ($this->files ?? [] as $file) {
             if (is_file($file)) {
                 unlink($file);
             }
@@ -81,8 +83,9 @@ class ImportPipelineTest extends TestCase
         for ($i = 1; $i <= $count; $i++) {
             $row = [
                 'Artikelnummer' => $prefix . '-' . $i,
-                'Bezeichnung' => 'Artikel ' . $i,
-                'Bezeichnung DE' => $i % 2 === 0 ? 'Deutscher Artikel ' . $i : '',
+                // Names carry the prefix: core derives URL keys from names, and keys must be unique across tests.
+                'Bezeichnung' => 'Artikel ' . $i . ' ' . $prefix,
+                'Bezeichnung DE' => $i % 2 === 0 ? 'Deutscher Artikel ' . $i . ' ' . $prefix : '',
                 'Preis' => number_format(10 + $i, 2, ',', '.'),
                 'Bestand' => (string) ($i * 3),
                 'Aktiv' => 'ja',
@@ -170,12 +173,12 @@ class ImportPipelineTest extends TestCase
         $sku = strtolower($prefix . '-2');
         $values = $this->current([$prefix . '-2'], ['name', 'price', 'qty', 'is_in_stock', 'product_online', 'visibility']);
         self::assertSame(
-            ['name' => 'Artikel 2', 'price' => '12', 'product_online' => '1', 'visibility' => 'Catalog, Search',
+            ['name' => 'Artikel 2 ' . $prefix, 'price' => '12', 'product_online' => '1', 'visibility' => 'Catalog, Search',
                 'qty' => '6', 'is_in_stock' => '1'],
             $values[$sku]
         );
-        self::assertSame('Deutscher Artikel 2', $this->current([$prefix . '-2'], ['name'], 'default')[$sku]['name']);
-        self::assertSame('Artikel 1', $this->current([$prefix . '-1'], ['name'], 'default')[strtolower($prefix . '-1')]['name']);
+        self::assertSame('Deutscher Artikel 2 ' . $prefix, $this->current([$prefix . '-2'], ['name'], 'default')[$sku]['name']);
+        self::assertSame('Artikel 1 ' . $prefix, $this->current([$prefix . '-1'], ['name'], 'default')[strtolower($prefix . '-1')]['name']);
     }
 
     public function testDryRunPreviewEqualsTheRealChanges(): void
@@ -185,7 +188,7 @@ class ImportPipelineTest extends TestCase
         $this->runFile($profile, $this->csv($this->supplierRows($prefix, 5)), RunInterface::MODE_LIVE);
         $file = $this->csv($this->supplierRows($prefix, 6, [
             '2' => ['Preis' => '99,90'],
-            '3' => ['Bestand' => '0', 'Bezeichnung' => 'Neu 3'],
+            '3' => ['Bestand' => '0', 'Bezeichnung' => 'Neu 3 ' . $prefix],
         ]));
 
         $dry = $this->runFile($profile, $file, RunInterface::MODE_DRY_RUN);
@@ -198,7 +201,10 @@ class ImportPipelineTest extends TestCase
         }
         self::assertSame(PreviewRecord::CHANGED, $preview[$prefix . '-2']->changeType);
         self::assertSame(['price' => ['12', '99.9']], $preview[$prefix . '-2']->diff);
-        self::assertSame(['name' => ['Artikel 3', 'Neu 3'], 'qty' => ['9', '0']], $preview[$prefix . '-3']->diff);
+        self::assertSame(
+            ['name' => ['Artikel 3 ' . $prefix, 'Neu 3 ' . $prefix], 'qty' => ['9', '0']],
+            $preview[$prefix . '-3']->diff
+        );
         self::assertSame(PreviewRecord::NEW, $preview[$prefix . '-6']->changeType);
         self::assertSame(PreviewRecord::UNCHANGED, $preview[$prefix . '-1']->changeType);
         self::assertSame(PreviewRecord::UNCHANGED, $preview[$prefix . '-4 [default]']->changeType);
@@ -253,21 +259,21 @@ class ImportPipelineTest extends TestCase
     {
         $prefix = 'OI-BH-' . bin2hex(random_bytes(3));
         $this->runFile($this->profile(), $this->csv($this->supplierRows($prefix, 2)), RunInterface::MODE_LIVE);
-        $file = $this->csv($this->supplierRows($prefix, 4, ['1' => ['Bezeichnung' => 'Changed']]));
+        $file = $this->csv($this->supplierRows($prefix, 4, ['1' => ['Bezeichnung' => 'Changed ' . $prefix]]));
 
         $add = $this->runFile($this->profile('only_add'), $file, RunInterface::MODE_LIVE);
         self::assertSame(2, $add->getCount('skipped'), $add->getMessage());
         self::assertSame(2, $add->getCount('created'));
-        self::assertSame('Artikel 1', $this->current([$prefix . '-1'], ['name'])[strtolower($prefix . '-1')]['name']);
+        self::assertSame('Artikel 1 ' . $prefix, $this->current([$prefix . '-1'], ['name'])[strtolower($prefix . '-1')]['name']);
 
         $update = $this->runFile(
             $this->profile('only_update'),
-            $this->csv($this->supplierRows($prefix, 5, ['1' => ['Bezeichnung' => 'Changed']])),
+            $this->csv($this->supplierRows($prefix, 5, ['1' => ['Bezeichnung' => 'Changed ' . $prefix]])),
             RunInterface::MODE_LIVE
         );
         self::assertSame(1, $update->getCount('skipped'), $update->getMessage());
         self::assertSame(0, $update->getCount('created'));
-        self::assertSame('Changed', $this->current([$prefix . '-1'], ['name'])[strtolower($prefix . '-1')]['name']);
+        self::assertSame('Changed ' . $prefix, $this->current([$prefix . '-1'], ['name'])[strtolower($prefix . '-1')]['name']);
     }
 
     public function testErrorsPointAtTheSupplierRows(): void

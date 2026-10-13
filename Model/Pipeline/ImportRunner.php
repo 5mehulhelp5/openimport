@@ -93,6 +93,8 @@ class ImportRunner
 
     private ?\Closure $heartbeat = null;
 
+    private ?ErrorRecord $firstError = null;
+
     /**
      * @param ReaderFactory $readerFactory
      * @param RowFilterCompiler $filterCompiler
@@ -217,6 +219,7 @@ class ImportRunner
         $this->previewSample = [];
         $this->sampleCounts = [];
         $this->existingAffected = 0;
+        $this->firstError = null;
     }
 
     /**
@@ -504,12 +507,16 @@ class ImportRunner
             $status = $result->valid
                 ? ($this->counts['errors'] > 0 ? RunInterface::STATUS_PARTIAL : RunInterface::STATUS_SUCCESS)
                 : RunInterface::STATUS_FAILED;
-            return $this->outcome($status, $this->dryRunMessage($result->valid, $safety, $reader !== null));
+            return $this->outcome(
+                $status,
+                $this->dryRunMessage($result->valid, $safety, $reader !== null) . $this->firstProblem($result->valid)
+            );
         }
         if (!$result->imported) {
             return $this->outcome(
                 RunInterface::STATUS_FAILED,
-                $result->valid ? 'Magento did not import the rows.' : 'Magento refused the rows. Nothing was imported.',
+                ($result->valid ? 'Magento did not import the rows.' : 'Magento refused the rows. Nothing was imported.')
+                . $this->firstProblem($result->valid),
                 $result->historyId
             );
         }
@@ -594,6 +601,23 @@ class ImportRunner
         return implode(' ', $parts);
     }
 
+    /**
+     * " First problem (row 3, price): …" for a refused run, so the run list and the CLI say why.
+     */
+    private function firstProblem(bool $valid): string
+    {
+        $first = $this->firstError;
+        if ($valid || $first === null) {
+            return '';
+        }
+
+        return sprintf(
+            ' First problem (%s): %s',
+            trim(($first->sourceRow > 0 ? 'row ' . $first->sourceRow : 'file') . ', ' . $first->field, ', '),
+            $first->message
+        );
+    }
+
     private function nothingToDo(): string
     {
         return sprintf(
@@ -616,6 +640,7 @@ class ImportRunner
     private function error(ErrorRecord $error): void
     {
         $this->counts['errors']++;
+        $this->firstError ??= $error;
         if ($this->errorsStored + count($this->pendingErrors) < $this->errorCap) {
             $this->pendingErrors[] = $error;
         }
