@@ -245,6 +245,7 @@ class CoreBridgeTest extends TestCase
         return (string) json_encode([
             'valid' => $result->valid,
             'imported' => $result->imported,
+            'counts' => [$result->rows, $result->entities, $result->invalidRows, $result->created, $result->updated],
             'errors' => array_map(static fn ($e): array => (array) $e, $result->errors),
         ]);
     }
@@ -376,31 +377,55 @@ class CoreBridgeTest extends TestCase
         Bootstrap::getObjectManager()->get(ProductRepositoryInterface::class)->get($prefix . '-1', false, 0, true);
     }
 
-    public function testInvalidRowsAreReportedWithTheirZeroBasedPositionAndValidRowsAreImported(): void
+    public function testInvalidRowsAreReportedWithTheirZeroBasedPositionAndSkipErrorsMatchesCore(): void
     {
-        $prefix = $this->prefix('err');
-        $rows = $this->productRows($prefix);
-        $rows[1]['price'] = 'twelve';
-        $rows[3]['product_type'] = 'spaceship';
+        $broken = function (string $prefix): array {
+            $rows = $this->productRows($prefix);
+            $rows[1]['price'] = 'twelve';
+            $rows[3]['product_type'] = 'spaceship';
 
-        $result = $this->importer()->run(
-            new ImportRequest('catalog_product', skipErrors: true, allowedErrors: 10),
-            $this->mappedSource(self::PRODUCT_COLUMNS, $rows)
-        );
+            return $rows;
+        };
+        $core = $this->prefix('coreerr');
+        $ours = $this->prefix('oierr');
+        $request = new ImportRequest('catalog_product', skipErrors: true, allowedErrors: 10);
 
-        self::assertTrue($result->imported, $this->describe($result));
+        $coreResult = $this->importer()->run($request, $this->csvSource(self::PRODUCT_COLUMNS, $broken($core)));
+        $result = $this->importer()->run($request, $this->mappedSource(self::PRODUCT_COLUMNS, $broken($ours)));
+
         self::assertSame(2, $result->invalidRows, $this->describe($result));
         self::assertNotSame([], $result->errorsForRow(1), $this->describe($result));
         self::assertNotSame([], $result->errorsForRow(3), $this->describe($result));
         self::assertSame([], $result->errorsForRow(0));
+        self::assertSame(
+            [$coreResult->valid, $coreResult->imported, $coreResult->invalidRows, $coreResult->created],
+            [$result->valid, $result->imported, $result->invalidRows, $result->created],
+            $this->describe($coreResult) . ' / ' . $this->describe($result)
+        );
+        self::assertSame($this->existing($core, 5), $this->existing($ours, 5), $this->describe($result));
+    }
+
+    /**
+     * Which of the SKUs <prefix>-1 … <prefix>-<count> exist.
+     *
+     * @param string $prefix
+     * @param int $count
+     * @return array<int, bool>
+     */
+    private function existing(string $prefix, int $count): array
+    {
         $repository = Bootstrap::getObjectManager()->get(ProductRepositoryInterface::class);
-        self::assertSame($prefix . '-1', $repository->get($prefix . '-1', false, 0, true)->getSku());
-        try {
-            $repository->get($prefix . '-2', false, 0, true);
-            self::fail('The row with an invalid price must not be imported.');
-        } catch (NoSuchEntityException) {
-            self::addToAssertionCount(1);
+        $existing = [];
+        for ($i = 1; $i <= $count; $i++) {
+            try {
+                $repository->get($prefix . '-' . $i, false, 0, true);
+                $existing[$i] = true;
+            } catch (NoSuchEntityException) {
+                $existing[$i] = false;
+            }
         }
+
+        return $existing;
     }
 
     public function testStopOnErrorRefusesTheWholeImport(): void
