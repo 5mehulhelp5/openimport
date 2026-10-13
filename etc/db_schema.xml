@@ -1,0 +1,246 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Iman Aboheydary. All rights reserved.
+ * See LICENSE for license details (MIT).
+ */
+-->
+<schema xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:Setup/Declaration/Schema/etc/schema.xsd">
+    <table name="openimport_profile" resource="default" engine="innodb" comment="OpenImport profiles">
+        <column xsi:type="int" name="profile_id" unsigned="true" nullable="false" identity="true" comment="Profile ID"/>
+        <column xsi:type="varchar" name="name" length="255" nullable="false" comment="Name"/>
+        <column xsi:type="varchar" name="direction" length="16" nullable="false" default="import"
+                comment="import or export"/>
+        <column xsi:type="varchar" name="entity" length="64" nullable="false" comment="Entity code"/>
+        <column xsi:type="smallint" name="is_active" unsigned="true" nullable="false" default="0"
+                comment="Schedule enabled"/>
+        <column xsi:type="varchar" name="source_type" length="16" nullable="false" default="upload"
+                comment="upload, folder, url, sftp, ftp"/>
+        <column xsi:type="text" name="source_config" nullable="true" comment="Source or destination settings (JSON)"/>
+        <column xsi:type="varchar" name="format" length="16" nullable="false" default="auto"
+                comment="auto, csv, xlsx, json, xml"/>
+        <column xsi:type="text" name="format_options" nullable="true" comment="Reader or writer options (JSON)"/>
+        <column xsi:type="varchar" name="behavior" length="32" nullable="false" default="add_update"
+                comment="add_update, only_add, only_update, replace, delete"/>
+        <column xsi:type="varchar" name="on_error" length="8" nullable="false" default="stop" comment="stop or skip"/>
+        <column xsi:type="int" name="allowed_errors" unsigned="true" nullable="false" default="0"
+                comment="Errors allowed before the run stops"/>
+        <column xsi:type="smallint" name="delta" unsigned="true" nullable="false" default="0"
+                comment="Skip unchanged rows"/>
+        <column xsi:type="smallint" name="safety_threshold" unsigned="true" nullable="true"
+                comment="Percent; null = configuration default"/>
+        <column xsi:type="varchar" name="schedule" length="64" nullable="true" comment="Cron expression"/>
+        <column xsi:type="varchar" name="after_success" length="16" nullable="false" default="keep"
+                comment="keep, move, delete"/>
+        <column xsi:type="varchar" name="notify" length="16" nullable="false" default="failure"
+                comment="never, failure, always"/>
+        <column xsi:type="text" name="notify_emails" nullable="true" comment="Notification addresses"/>
+        <column xsi:type="text" name="row_filters" nullable="true" comment="Row filters (JSON)"/>
+        <column xsi:type="text" name="export_options" nullable="true" comment="Export columns and filters (JSON)"/>
+        <column xsi:type="varchar" name="created_by" length="255" nullable="true" comment="Admin user name"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Created at"/>
+        <column xsi:type="timestamp" name="updated_at" on_update="true" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Updated at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="profile_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="OPENIMPORT_PROFILE_NAME">
+            <column name="name"/>
+        </constraint>
+        <index referenceId="OPENIMPORT_PROFILE_IS_ACTIVE" indexType="btree">
+            <column name="is_active"/>
+        </index>
+    </table>
+
+    <table name="openimport_mapping" resource="default" engine="innodb" comment="OpenImport field mappings">
+        <column xsi:type="int" name="mapping_id" unsigned="true" nullable="false" identity="true" comment="Mapping ID"/>
+        <column xsi:type="int" name="profile_id" unsigned="true" nullable="false" comment="Profile ID"/>
+        <column xsi:type="int" name="position" unsigned="true" nullable="false" default="0" comment="Position"/>
+        <column xsi:type="varchar" name="target" length="255" nullable="false" comment="Target field"/>
+        <column xsi:type="varchar" name="source" length="255" nullable="true" comment="Source column"/>
+        <column xsi:type="text" name="static_value" nullable="true" comment="Fixed value"/>
+        <column xsi:type="text" name="transforms" nullable="true" comment="Transform list (JSON)"/>
+        <column xsi:type="smallint" name="is_required" unsigned="true" nullable="false" default="0"
+                comment="Empty is an error"/>
+        <column xsi:type="smallint" name="value_map_case_sensitive" unsigned="true" nullable="false" default="0"
+                comment="Value map compares case"/>
+        <column xsi:type="smallint" name="value_map_strict" unsigned="true" nullable="false" default="0"
+                comment="Unmapped values are errors"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="mapping_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="OPENIMPORT_MAPPING_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID"
+                    table="openimport_mapping" column="profile_id" referenceTable="openimport_profile"
+                    referenceColumn="profile_id" onDelete="CASCADE"/>
+        <index referenceId="OPENIMPORT_MAPPING_PROFILE_ID_POSITION" indexType="btree">
+            <column name="profile_id"/>
+            <column name="position"/>
+        </index>
+    </table>
+
+    <table name="openimport_value_map" resource="default" engine="innodb" comment="OpenImport value maps">
+        <column xsi:type="int" name="value_map_id" unsigned="true" nullable="false" identity="true"
+                comment="Value map ID"/>
+        <column xsi:type="int" name="profile_id" unsigned="true" nullable="false" comment="Profile ID"/>
+        <column xsi:type="varchar" name="target" length="255" nullable="false" comment="Target field"/>
+        <column xsi:type="varchar" name="from_value" length="255" nullable="false" comment="From"/>
+        <column xsi:type="text" name="to_value" nullable="true" comment="To"/>
+        <column xsi:type="int" name="position" unsigned="true" nullable="false" default="0" comment="Position"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="value_map_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="OPENIMPORT_VALUE_MAP_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID"
+                    table="openimport_value_map" column="profile_id" referenceTable="openimport_profile"
+                    referenceColumn="profile_id" onDelete="CASCADE"/>
+        <index referenceId="OPENIMPORT_VALUE_MAP_PROFILE_ID_TARGET" indexType="btree">
+            <column name="profile_id"/>
+            <column name="target"/>
+        </index>
+    </table>
+
+    <table name="openimport_run" resource="default" engine="innodb" comment="OpenImport runs">
+        <column xsi:type="int" name="run_id" unsigned="true" nullable="false" identity="true" comment="Run ID"/>
+        <column xsi:type="int" name="profile_id" unsigned="true" nullable="true" comment="Profile ID"/>
+        <column xsi:type="varchar" name="profile_name" length="255" nullable="false" default=""
+                comment="Profile name at run time"/>
+        <column xsi:type="varchar" name="direction" length="16" nullable="false" default="import" comment="Direction"/>
+        <column xsi:type="varchar" name="entity" length="64" nullable="false" default="" comment="Entity code"/>
+        <column xsi:type="varchar" name="run_trigger" length="16" nullable="false" default="manual"
+                comment="manual, schedule, cli, api"/>
+        <column xsi:type="varchar" name="mode" length="16" nullable="false" default="dry_run"
+                comment="dry_run or live"/>
+        <column xsi:type="varchar" name="status" length="32" nullable="false" default="queued" comment="Status"/>
+        <column xsi:type="int" name="count_read" unsigned="true" nullable="false" default="0" comment="Rows read"/>
+        <column xsi:type="int" name="count_filtered" unsigned="true" nullable="false" default="0"
+                comment="Rows skipped by filters"/>
+        <column xsi:type="int" name="count_unchanged" unsigned="true" nullable="false" default="0"
+                comment="Rows skipped as unchanged"/>
+        <column xsi:type="int" name="count_skipped" unsigned="true" nullable="false" default="0"
+                comment="Rows skipped by behaviour"/>
+        <column xsi:type="int" name="count_invalid" unsigned="true" nullable="false" default="0"
+                comment="Rows refused by validation"/>
+        <column xsi:type="int" name="count_created" unsigned="true" nullable="false" default="0" comment="Created"/>
+        <column xsi:type="int" name="count_updated" unsigned="true" nullable="false" default="0" comment="Updated"/>
+        <column xsi:type="int" name="count_deleted" unsigned="true" nullable="false" default="0" comment="Deleted"/>
+        <column xsi:type="int" name="count_errors" unsigned="true" nullable="false" default="0" comment="Errors"/>
+        <column xsi:type="int" name="count_exported" unsigned="true" nullable="false" default="0"
+                comment="Rows exported"/>
+        <column xsi:type="int" name="progress_rows" unsigned="true" nullable="false" default="0"
+                comment="Rows processed so far"/>
+        <column xsi:type="int" name="peak_memory_mb" unsigned="true" nullable="false" default="0"
+                comment="Peak memory (MB)"/>
+        <column xsi:type="varchar" name="source_file" length="1024" nullable="true" comment="Source file used"/>
+        <column xsi:type="varchar" name="output_file" length="1024" nullable="true" comment="File produced"/>
+        <column xsi:type="text" name="options" nullable="true" comment="Run options (JSON)"/>
+        <column xsi:type="text" name="message" nullable="true" comment="Summary or failure message"/>
+        <column xsi:type="varchar" name="requested_by" length="255" nullable="true" comment="Admin user or CLI"/>
+        <column xsi:type="int" name="parent_run_id" unsigned="true" nullable="true"
+                comment="Dry run this live run confirms"/>
+        <column xsi:type="timestamp" name="created_at" on_update="false" nullable="false" default="CURRENT_TIMESTAMP"
+                comment="Queued at"/>
+        <column xsi:type="timestamp" name="started_at" on_update="false" nullable="true" comment="Started at"/>
+        <column xsi:type="timestamp" name="finished_at" on_update="false" nullable="true" comment="Finished at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="run_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="OPENIMPORT_RUN_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID"
+                    table="openimport_run" column="profile_id" referenceTable="openimport_profile"
+                    referenceColumn="profile_id" onDelete="SET NULL"/>
+        <index referenceId="OPENIMPORT_RUN_PROFILE_ID_CREATED_AT" indexType="btree">
+            <column name="profile_id"/>
+            <column name="created_at"/>
+        </index>
+        <index referenceId="OPENIMPORT_RUN_STATUS" indexType="btree">
+            <column name="status"/>
+        </index>
+    </table>
+
+    <table name="openimport_run_error" resource="default" engine="innodb" comment="OpenImport run errors">
+        <column xsi:type="bigint" name="error_id" unsigned="true" nullable="false" identity="true" comment="Error ID"/>
+        <column xsi:type="int" name="run_id" unsigned="true" nullable="false" comment="Run ID"/>
+        <column xsi:type="int" name="source_row" unsigned="true" nullable="false" default="0"
+                comment="Row in the source file"/>
+        <column xsi:type="varchar" name="identifier" length="255" nullable="false" default="" comment="Identifier"/>
+        <column xsi:type="varchar" name="field" length="255" nullable="false" default="" comment="Field"/>
+        <column xsi:type="text" name="message" nullable="false" comment="Message"/>
+        <column xsi:type="text" name="source_data" nullable="true" comment="Original row (JSON)"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="error_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="OPENIMPORT_RUN_ERROR_RUN_ID_OPENIMPORT_RUN_RUN_ID"
+                    table="openimport_run_error" column="run_id" referenceTable="openimport_run"
+                    referenceColumn="run_id" onDelete="CASCADE"/>
+        <index referenceId="OPENIMPORT_RUN_ERROR_RUN_ID_SOURCE_ROW" indexType="btree">
+            <column name="run_id"/>
+            <column name="source_row"/>
+        </index>
+    </table>
+
+    <table name="openimport_run_preview" resource="default" engine="innodb" comment="OpenImport dry-run previews">
+        <column xsi:type="bigint" name="preview_id" unsigned="true" nullable="false" identity="true"
+                comment="Preview ID"/>
+        <column xsi:type="int" name="run_id" unsigned="true" nullable="false" comment="Run ID"/>
+        <column xsi:type="varchar" name="identifier" length="255" nullable="false" default="" comment="Identifier"/>
+        <column xsi:type="varchar" name="change_type" length="16" nullable="false" comment="new, changed, unchanged"/>
+        <column xsi:type="text" name="diff" nullable="true" comment="Field changes (JSON)"/>
+        <column xsi:type="int" name="source_row" unsigned="true" nullable="false" default="0"
+                comment="Row in the source file"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="preview_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="OPENIMPORT_RUN_PREVIEW_RUN_ID_OPENIMPORT_RUN_RUN_ID"
+                    table="openimport_run_preview" column="run_id" referenceTable="openimport_run"
+                    referenceColumn="run_id" onDelete="CASCADE"/>
+        <index referenceId="OPENIMPORT_RUN_PREVIEW_RUN_ID" indexType="btree">
+            <column name="run_id"/>
+        </index>
+    </table>
+
+    <table name="openimport_row_hash" resource="default" engine="innodb" comment="OpenImport delta hashes">
+        <column xsi:type="int" name="profile_id" unsigned="true" nullable="false" comment="Profile ID"/>
+        <column xsi:type="varchar" name="identifier_key" length="40" nullable="false"
+                comment="SHA-1 of the identifier (exact, unlike the table collation)"/>
+        <column xsi:type="varchar" name="identifier" length="255" nullable="false" comment="Identifier"/>
+        <column xsi:type="varchar" name="hash" length="64" nullable="false" comment="Hash of the mapped rows"/>
+        <column xsi:type="int" name="run_id" unsigned="true" nullable="true" comment="Run that wrote it"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="profile_id"/>
+            <column name="identifier_key"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="OPENIMPORT_ROW_HASH_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID"
+                    table="openimport_row_hash" column="profile_id" referenceTable="openimport_profile"
+                    referenceColumn="profile_id" onDelete="CASCADE"/>
+    </table>
+
+    <table name="openimport_lock" resource="default" engine="innodb" comment="OpenImport locks">
+        <column xsi:type="varchar" name="lock_name" length="128" nullable="false" comment="Lock name"/>
+        <column xsi:type="int" name="run_id" unsigned="true" nullable="true" comment="Run holding the lock"/>
+        <column xsi:type="timestamp" name="acquired_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Acquired at"/>
+        <column xsi:type="timestamp" name="heartbeat_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Last heartbeat"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="lock_name"/>
+        </constraint>
+    </table>
+
+    <table name="openimport_export_mark" resource="default" engine="innodb"
+           comment="OpenImport records already exported">
+        <column xsi:type="int" name="profile_id" unsigned="true" nullable="false" comment="Profile ID"/>
+        <column xsi:type="varchar" name="entity_type" length="32" nullable="false" comment="Entity type"/>
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" comment="Entity ID"/>
+        <column xsi:type="int" name="run_id" unsigned="true" nullable="true" comment="Run that exported it"/>
+        <column xsi:type="timestamp" name="exported_at" on_update="false" nullable="false"
+                default="CURRENT_TIMESTAMP" comment="Exported at"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="profile_id"/>
+            <column name="entity_type"/>
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="foreign" referenceId="OPENIMPORT_EXPORT_MARK_PROFILE_ID_OPENIMPORT_PROFILE_PROFILE_ID"
+                    table="openimport_export_mark" column="profile_id" referenceTable="openimport_profile"
+                    referenceColumn="profile_id" onDelete="CASCADE"/>
+    </table>
+</schema>

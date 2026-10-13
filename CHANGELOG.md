@@ -22,3 +22,7 @@ All notable changes to this project are documented here. The format follows
 - Mapping engine: source columns, fixed values, transform chains, required fields, identifier checks, store-view
   values as extra rows (with SKU, attribute set and type carried), auto-match with German and English synonyms and
   store-view column names; row filters (include/exclude, all/any, 13 operators or expressions). See docs/mapping.md.
+- Database schema (`openimport_profile`, `_mapping`, `_value_map`, `_run`, `_run_error`, `_run_preview`, `_row_hash`,
+  `_lock`, `_export_mark`), profile and run repositories (`Api/`), profile validation listing every problem, run
+  queue claimed with conditional updates, batched error, preview and delta-hash storage, stale-aware locks, and a
+  5-field cron expression parser.

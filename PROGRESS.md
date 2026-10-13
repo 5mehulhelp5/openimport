@@ -21,8 +21,8 @@ Iman's Mac (`~/Projects/openimport-dev-env`, Warden) whenever the laptop is open
 |---|---|---|
 | S1 | Readers: CSV/TSV, XLSX (own), JSON, XML, format detection, `docs/file-formats.md`; 50k baseline | PR #4 |
 | S2 | Transforms and the safe expression language, value maps, number parsing, `docs/transforms.md` | PR #5 (stacked on #4) |
-| S3 | Mapping compiler, store-view rows, auto-match, row filters, entity registry, `docs/mapping.md` (only add / only update move to S5: they need the database) | PR open: `feat/m1-s3-mapping` |
-| S4 | Schema: profile, run, run_error, run_preview, row_hash, lock; repositories | open |
+| S3 | Mapping compiler, store-view rows, auto-match, row filters, entity registry, `docs/mapping.md` (only add / only update move to S5: they need the database) | PR #6 (stacked on #5) |
+| S4 | Schema (9 tables + whitelist), `Api/` profile and run repositories, validator, storage services (errors, preview, hashes, locks), cron expressions | PR open: `feat/m1-s4-schema` |
 | S5 | Pipeline runner, errors mapped to source rows, dry-run preview, delta hashes | open |
 | S6 | `openimport_stock_price` entity (MSI or legacy stock) | open |
 | S7 | CLI: `openimport:run`, `openimport:profile:list`, `openimport:run:status` | open |
@@ -30,7 +30,7 @@ Iman's Mac (`~/Projects/openimport-dev-env`, Warden) whenever the laptop is open
 
 ## Exact next step
 
-Merge S1, S2, S3 in order when CI is green; S4 (schema, profile and run repositories) on `feat/m1-s4-schema`.
+Merge S1, S2, S3 in order when CI is green; S5 (pipeline runner) on `feat/m1-s5-pipeline`.
 
 ## Open questions
 
