@@ -26,7 +26,7 @@ class TransformPoolTest extends TestCase
      * @param ValueMap|null $map
      * @return string
      */
-    private function run(array $definitions, string $value, ?ValueMap $map = null): string
+    private function transform(array $definitions, string $value, ?ValueMap $map = null): string
     {
         $chain = (new TransformPool())->compile($definitions, new TransformScope('field', $map));
 
@@ -105,15 +105,15 @@ class TransformPoolTest extends TestCase
     #[\PHPUnit\Framework\Attributes\DataProvider('transforms')]
     public function testTransform(array $definitions, string $value, string $expected): void
     {
-        self::assertSame($expected, $this->run($definitions, $value));
+        self::assertSame($expected, $this->transform($definitions, $value));
     }
 
     public function testValueMap(): void
     {
         $map = new ValueMap(['Ja' => '1', 'Nein' => '0', 'ja' => 'ignored duplicate']);
 
-        self::assertSame('1', $this->run(['map'], ' JA ', $map));
-        self::assertSame('vielleicht', $this->run(['map'], 'vielleicht', $map));
+        self::assertSame('1', $this->transform(['map'], ' JA ', $map));
+        self::assertSame('vielleicht', $this->transform(['map'], 'vielleicht', $map));
         self::assertSame(2, $map->count());
     }
 
@@ -121,10 +121,10 @@ class TransformPoolTest extends TestCase
     {
         $map = new ValueMap(['Ja' => '1'], true, true);
 
-        self::assertSame('1', $this->run(['map'], 'Ja', $map));
+        self::assertSame('1', $this->transform(['map'], 'Ja', $map));
         $this->expectException(TransformException::class);
         $this->expectExceptionMessage('The value "ja" is not in the value map.');
-        $this->run(['map'], 'ja', $map);
+        $this->transform(['map'], 'ja', $map);
     }
 
     /**
@@ -201,7 +201,7 @@ class TransformPoolTest extends TestCase
     {
         $this->expectException(TransformException::class);
         $this->expectExceptionMessage($message);
-        $this->run($definitions, $value);
+        $this->transform($definitions, $value);
     }
 
     public function testOwnProvidersAddOrReplaceTransforms(): void
@@ -227,6 +227,6 @@ class TransformPoolTest extends TestCase
 
     public function testArgumentsGivenAsAScalar(): void
     {
-        self::assertSame('x-1', $this->run([['name' => 'prefix', 'args' => 'x-']], '1'));
+        self::assertSame('x-1', $this->transform([['name' => 'prefix', 'args' => 'x-']], '1'));
     }
 }
