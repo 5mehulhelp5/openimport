@@ -16,4 +16,34 @@
                 type="Iranimij\OpenImport\Model\ProfileSearchResults"/>
     <preference for="Iranimij\OpenImport\Api\Data\RunSearchResultsInterface"
                 type="Iranimij\OpenImport\Model\RunSearchResults"/>
+
+    <virtualType name="Iranimij\OpenImport\Logger\Handler" type="Magento\Framework\Logger\Handler\Base">
+        <arguments>
+            <argument name="fileName" xsi:type="string">/var/log/openimport.log</argument>
+        </arguments>
+    </virtualType>
+    <virtualType name="Iranimij\OpenImport\Logger" type="Magento\Framework\Logger\Monolog">
+        <arguments>
+            <argument name="name" xsi:type="string">openimport</argument>
+            <argument name="handlers" xsi:type="array">
+                <item name="file" xsi:type="object">Iranimij\OpenImport\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </virtualType>
+    <type name="Iranimij\OpenImport\Model\Execution\RunProcessor">
+        <arguments>
+            <argument name="logger" xsi:type="object">Iranimij\OpenImport\Logger</argument>
+        </arguments>
+    </type>
+
+    <type name="Iranimij\OpenImport\Model\Entity\RecordReaderPool">
+        <arguments>
+            <argument name="readers" xsi:type="array">
+                <item name="catalog_product" xsi:type="object">Iranimij\OpenImport\Model\Entity\Reader\ProductRecordReader</item>
+                <item name="openimport_stock_price" xsi:type="object">Iranimij\OpenImport\Model\Entity\Reader\ProductRecordReader</item>
+                <item name="customer" xsi:type="object">Iranimij\OpenImport\Model\Entity\Reader\CustomerRecordReader</item>
+                <item name="customer_composite" xsi:type="object">Iranimij\OpenImport\Model\Entity\Reader\CustomerRecordReader</item>
+            </argument>
+        </arguments>
+    </type>
 </config>

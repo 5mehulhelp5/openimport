@@ -10,6 +10,7 @@ nav:
   - File formats: file-formats.md
   - Transforms and expressions: transforms.md
   - Mapping and filters: mapping.md
+  - Runs, dry runs and safety: runs.md
   - Developers:
       - Core bridge: core-bridge.md
       - Core facts: core-facts.md

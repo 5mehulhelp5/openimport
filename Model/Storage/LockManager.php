@@ -26,7 +26,7 @@ class LockManager
      */
     public function __construct(
         private readonly ResourceConnection $resource,
-        private readonly int $staleSeconds = 900
+        private readonly int $staleSeconds = 3600
     ) {
     }
 
