@@ -134,7 +134,7 @@ class ImportPipelineTest extends TestCase
      * @param array<string, mixed> $options
      * @return RunInterface
      */
-    private function run(ProfileInterface $profile, string $file, string $mode, array $options = []): RunInterface
+    private function runFile(ProfileInterface $profile, string $file, string $mode, array $options = []): RunInterface
     {
         $run = Bootstrap::getObjectManager()->get(RunQueue::class)->queue(
             $profile,
@@ -160,7 +160,7 @@ class ImportPipelineTest extends TestCase
     public function testSupplierFileIsImported(): void
     {
         $prefix = 'OI-PL-' . bin2hex(random_bytes(3));
-        $run = $this->run($this->profile(), $this->csv($this->supplierRows($prefix, 4)), RunInterface::MODE_LIVE);
+        $run = $this->runFile($this->profile(), $this->csv($this->supplierRows($prefix, 4)), RunInterface::MODE_LIVE);
 
         self::assertSame(RunInterface::STATUS_SUCCESS, $run->getStatus(), $run->getMessage());
         self::assertSame(4, $run->getCount('read'));
@@ -182,13 +182,13 @@ class ImportPipelineTest extends TestCase
     {
         $prefix = 'OI-PV-' . bin2hex(random_bytes(3));
         $profile = $this->profile();
-        $this->run($profile, $this->csv($this->supplierRows($prefix, 5)), RunInterface::MODE_LIVE);
+        $this->runFile($profile, $this->csv($this->supplierRows($prefix, 5)), RunInterface::MODE_LIVE);
         $file = $this->csv($this->supplierRows($prefix, 6, [
             '2' => ['Preis' => '99,90'],
             '3' => ['Bestand' => '0', 'Bezeichnung' => 'Neu 3'],
         ]));
 
-        $dry = $this->run($profile, $file, RunInterface::MODE_DRY_RUN);
+        $dry = $this->runFile($profile, $file, RunInterface::MODE_DRY_RUN);
         self::assertSame(RunInterface::STATUS_SUCCESS, $dry->getStatus(), $dry->getMessage());
         self::assertSame(1, $dry->getCount('created'));
         self::assertSame(2, $dry->getCount('updated'));
@@ -205,7 +205,7 @@ class ImportPipelineTest extends TestCase
         // Nothing was written by the dry run.
         self::assertSame([], $this->current([$prefix . '-6'], ['name']));
 
-        $live = $this->run($profile, $file, RunInterface::MODE_LIVE);
+        $live = $this->runFile($profile, $file, RunInterface::MODE_LIVE);
         self::assertSame(RunInterface::STATUS_SUCCESS, $live->getStatus(), $live->getMessage());
         self::assertSame(1, $live->getCount('created'));
         // Every diff of the preview is what the shop now has.
@@ -228,15 +228,15 @@ class ImportPipelineTest extends TestCase
         $prefix = 'OI-DL-' . bin2hex(random_bytes(3));
         $profile = $this->profile('add_update', ['delta' => true]);
 
-        $first = $this->run($profile, $this->csv($this->supplierRows($prefix, 6)), RunInterface::MODE_LIVE);
+        $first = $this->runFile($profile, $this->csv($this->supplierRows($prefix, 6)), RunInterface::MODE_LIVE);
         self::assertSame(6, $first->getCount('created'), $first->getMessage());
 
-        $second = $this->run($profile, $this->csv($this->supplierRows($prefix, 6)), RunInterface::MODE_LIVE);
+        $second = $this->runFile($profile, $this->csv($this->supplierRows($prefix, 6)), RunInterface::MODE_LIVE);
         self::assertSame(RunInterface::STATUS_SUCCESS, $second->getStatus());
         self::assertSame(6, $second->getCount('unchanged'));
         self::assertStringStartsWith('Nothing to import', $second->getMessage());
 
-        $third = $this->run(
+        $third = $this->runFile(
             $profile,
             $this->csv($this->supplierRows($prefix, 6, ['3' => ['Bestand' => '1']])),
             RunInterface::MODE_LIVE
@@ -245,22 +245,22 @@ class ImportPipelineTest extends TestCase
         self::assertSame(1, $third->getCount('updated'), $third->getMessage());
         self::assertSame('1', $this->current([$prefix . '-3'], ['qty'])[strtolower($prefix . '-3')]['qty']);
 
-        $full = $this->run($profile, $this->csv($this->supplierRows($prefix, 6)), RunInterface::MODE_LIVE, ['full' => true]);
+        $full = $this->runFile($profile, $this->csv($this->supplierRows($prefix, 6)), RunInterface::MODE_LIVE, ['full' => true]);
         self::assertSame(0, $full->getCount('unchanged'));
     }
 
     public function testOnlyAddAndOnlyUpdate(): void
     {
         $prefix = 'OI-BH-' . bin2hex(random_bytes(3));
-        $this->run($this->profile(), $this->csv($this->supplierRows($prefix, 2)), RunInterface::MODE_LIVE);
+        $this->runFile($this->profile(), $this->csv($this->supplierRows($prefix, 2)), RunInterface::MODE_LIVE);
         $file = $this->csv($this->supplierRows($prefix, 4, ['1' => ['Bezeichnung' => 'Changed']]));
 
-        $add = $this->run($this->profile('only_add'), $file, RunInterface::MODE_LIVE);
+        $add = $this->runFile($this->profile('only_add'), $file, RunInterface::MODE_LIVE);
         self::assertSame(2, $add->getCount('skipped'), $add->getMessage());
         self::assertSame(2, $add->getCount('created'));
         self::assertSame('Artikel 1', $this->current([$prefix . '-1'], ['name'])[strtolower($prefix . '-1')]['name']);
 
-        $update = $this->run(
+        $update = $this->runFile(
             $this->profile('only_update'),
             $this->csv($this->supplierRows($prefix, 5, ['1' => ['Bezeichnung' => 'Changed']])),
             RunInterface::MODE_LIVE
@@ -279,7 +279,7 @@ class ImportPipelineTest extends TestCase
         $mapping[6]['value_map_strict'] = true;
         $profile = Bootstrap::getObjectManager()->get(ProfileRepositoryInterface::class)->save($profile->setMapping($mapping));
 
-        $run = $this->run($profile, $this->csv($rows), RunInterface::MODE_LIVE);
+        $run = $this->runFile($profile, $this->csv($rows), RunInterface::MODE_LIVE);
 
         self::assertSame(RunInterface::STATUS_PARTIAL, $run->getStatus(), $run->getMessage());
         self::assertSame(3, $run->getCount('created'));
@@ -292,7 +292,7 @@ class ImportPipelineTest extends TestCase
         self::assertSame('teuer', $errors[0]->sourceData['Preis'] ?? null);
         self::assertSame('The value "vielleicht" is not in the value map.', $errors[1]->message);
 
-        $stop = $this->run($this->profile(), $this->csv($rows), RunInterface::MODE_LIVE);
+        $stop = $this->runFile($this->profile(), $this->csv($rows), RunInterface::MODE_LIVE);
         self::assertSame(RunInterface::STATUS_FAILED, $stop->getStatus());
         self::assertStringContainsString('Nothing was imported', $stop->getMessage());
     }
@@ -309,7 +309,7 @@ class ImportPipelineTest extends TestCase
             $rows[$index]['Set'] = $index === 2 ? 'NoSuchSet' : 'Default';
         }
 
-        $run = $this->run($profile, $this->csv($rows), RunInterface::MODE_LIVE);
+        $run = $this->runFile($profile, $this->csv($rows), RunInterface::MODE_LIVE);
 
         self::assertSame(RunInterface::STATUS_PARTIAL, $run->getStatus(), $run->getMessage());
         $errors = Bootstrap::getObjectManager()->get(ErrorLog::class)->fetch((int) $run->getRunId());
@@ -322,20 +322,20 @@ class ImportPipelineTest extends TestCase
     public function testDeleteAboveTheThresholdNeedsConfirmation(): void
     {
         $prefix = 'OI-DE-' . bin2hex(random_bytes(3));
-        $this->run($this->profile(), $this->csv($this->supplierRows($prefix, 3)), RunInterface::MODE_LIVE);
+        $this->runFile($this->profile(), $this->csv($this->supplierRows($prefix, 3)), RunInterface::MODE_LIVE);
         $profile = $this->profile('delete', ['safety_threshold' => 1]);
         $file = $this->csv($this->supplierRows($prefix, 3));
 
-        $dry = $this->run($profile, $file, RunInterface::MODE_DRY_RUN);
+        $dry = $this->runFile($profile, $file, RunInterface::MODE_DRY_RUN);
         self::assertSame(3, $dry->getCount('deleted'), $dry->getMessage());
         self::assertStringContainsString('A live run will ask for confirmation', $dry->getMessage());
 
-        $blocked = $this->run($profile, $file, RunInterface::MODE_LIVE);
+        $blocked = $this->runFile($profile, $file, RunInterface::MODE_LIVE);
         self::assertSame(RunInterface::STATUS_NEEDS_CONFIRMATION, $blocked->getStatus());
         self::assertStringContainsString('Type DELETE to confirm', $blocked->getMessage());
         self::assertCount(1, $this->current([$prefix . '-1'], ['name']));
 
-        $confirmed = $this->run($profile, $file, RunInterface::MODE_LIVE, ['confirmed' => true]);
+        $confirmed = $this->runFile($profile, $file, RunInterface::MODE_LIVE, ['confirmed' => true]);
         self::assertSame(RunInterface::STATUS_SUCCESS, $confirmed->getStatus(), $confirmed->getMessage());
         self::assertSame(3, $confirmed->getCount('deleted'));
         self::assertSame([], $this->current([$prefix . '-1'], ['name']));
@@ -343,7 +343,7 @@ class ImportPipelineTest extends TestCase
 
     public function testFileThatDoesNotFitTheMapping(): void
     {
-        $run = $this->run($this->profile(), $this->csv([['SKU' => 'x', 'Name' => 'y']]), RunInterface::MODE_DRY_RUN);
+        $run = $this->runFile($this->profile(), $this->csv([['SKU' => 'x', 'Name' => 'y']]), RunInterface::MODE_DRY_RUN);
 
         self::assertSame(RunInterface::STATUS_FAILED, $run->getStatus());
         self::assertStringContainsString('the file has no column "Artikelnummer"', $run->getMessage());
