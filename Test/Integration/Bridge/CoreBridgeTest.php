@@ -52,11 +52,17 @@ class CoreBridgeTest extends TestCase
 
     private const CUSTOMER_COLUMNS = ['email', '_website', '_store', 'firstname', 'lastname', 'group_id', 'gender', 'dob'];
 
-    private CoreImporter $importer;
+    /** Nullable: the 2.4.7 test framework resets test properties to null after each test. */
+    private ?CoreImporter $importer = null;
 
     protected function setUp(): void
     {
         $this->importer = Bootstrap::getObjectManager()->get(CoreImporter::class);
+    }
+
+    private function importer(): CoreImporter
+    {
+        return $this->importer ??= Bootstrap::getObjectManager()->get(CoreImporter::class);
     }
 
     /**
@@ -89,9 +95,14 @@ class CoreBridgeTest extends TestCase
                 'meta_title' => 'Trail shoe ' . $i,
             ];
         }
+        // Core validates every row of a product that is new in this file as a new product, store-view rows too, so
+        // they need the attribute set and the type (finding of the M0 spike; OpenImport's store-view expansion copies
+        // both onto the rows it generates).
         $rows[] = [
             'sku' => $prefix . '-1',
             'store_view_code' => 'default',
+            'attribute_set_code' => 'Default',
+            'product_type' => 'simple',
             'name' => $prefix . ' Trailschuh 1',
         ];
 
@@ -252,11 +263,11 @@ class CoreBridgeTest extends TestCase
         $core = $this->prefix('core');
         $ours = $this->prefix('oi');
 
-        $coreResult = $this->importer->run(
+        $coreResult = $this->importer()->run(
             new ImportRequest('catalog_product'),
             $this->csvSource(self::PRODUCT_COLUMNS, $this->productRows($core))
         );
-        $ourResult = $this->importer->run(
+        $ourResult = $this->importer()->run(
             new ImportRequest('catalog_product'),
             $this->mappedSource(self::PRODUCT_COLUMNS, $this->productRows($ours))
         );
@@ -286,7 +297,7 @@ class CoreBridgeTest extends TestCase
         $core = $this->prefix('coreupd');
         $ours = $this->prefix('oiupd');
         foreach ([$core, $ours] as $prefix) {
-            $this->importer->run(
+            $this->importer()->run(
                 new ImportRequest('catalog_product'),
                 $this->mappedSource(self::PRODUCT_COLUMNS, $this->productRows($prefix))
             );
@@ -297,8 +308,8 @@ class CoreBridgeTest extends TestCase
         ];
         $columns = ['sku', 'name', 'price', 'special_price', 'qty', 'is_in_stock'];
 
-        $coreResult = $this->importer->run(new ImportRequest('catalog_product'), $this->csvSource($columns, $updates($core)));
-        $ourResult = $this->importer->run(new ImportRequest('catalog_product'), $this->mappedSource($columns, $updates($ours)));
+        $coreResult = $this->importer()->run(new ImportRequest('catalog_product'), $this->csvSource($columns, $updates($core)));
+        $ourResult = $this->importer()->run(new ImportRequest('catalog_product'), $this->mappedSource($columns, $updates($ours)));
 
         self::assertTrue($ourResult->imported, $this->describe($ourResult));
         self::assertSame([$coreResult->created, $coreResult->updated], [$ourResult->created, $ourResult->updated]);
@@ -320,11 +331,11 @@ class CoreBridgeTest extends TestCase
         $core = $this->prefix('corecust');
         $ours = $this->prefix('oicust');
 
-        $coreResult = $this->importer->run(
+        $coreResult = $this->importer()->run(
             new ImportRequest('customer'),
             $this->csvSource(self::CUSTOMER_COLUMNS, $this->customerRows($core))
         );
-        $ourResult = $this->importer->run(
+        $ourResult = $this->importer()->run(
             new ImportRequest('customer'),
             $this->mappedSource(self::CUSTOMER_COLUMNS, $this->customerRows($ours))
         );
@@ -346,7 +357,7 @@ class CoreBridgeTest extends TestCase
         $prefix = $this->prefix('dry');
         $bunchesBefore = $this->importDataRows();
 
-        $result = $this->importer->run(
+        $result = $this->importer()->run(
             new ImportRequest('catalog_product', dryRun: true),
             $this->mappedSource(self::PRODUCT_COLUMNS, $this->productRows($prefix))
         );
@@ -367,7 +378,7 @@ class CoreBridgeTest extends TestCase
         $rows[1]['price'] = 'twelve';
         $rows[3]['product_type'] = 'spaceship';
 
-        $result = $this->importer->run(
+        $result = $this->importer()->run(
             new ImportRequest('catalog_product', skipErrors: true, allowedErrors: 10),
             $this->mappedSource(self::PRODUCT_COLUMNS, $rows)
         );
@@ -394,7 +405,7 @@ class CoreBridgeTest extends TestCase
         $rows[2]['price'] = 'n/a';
         $bunchesBefore = $this->importDataRows();
 
-        $result = $this->importer->run(
+        $result = $this->importer()->run(
             new ImportRequest('catalog_product'),
             $this->mappedSource(self::PRODUCT_COLUMNS, $rows)
         );
@@ -409,7 +420,7 @@ class CoreBridgeTest extends TestCase
         $prefix = $this->prefix('hist');
         $label = 'openimport-' . strtolower($prefix) . '.csv';
 
-        $result = $this->importer->run(
+        $result = $this->importer()->run(
             new ImportRequest('catalog_product', historyLabel: $label),
             $this->mappedSource(self::PRODUCT_COLUMNS, $this->productRows($prefix))
         );
@@ -432,7 +443,7 @@ class CoreBridgeTest extends TestCase
         $core = $this->prefix('corerep');
         $ours = $this->prefix('oirep');
         foreach ([$core, $ours] as $prefix) {
-            $this->importer->run(
+            $this->importer()->run(
                 new ImportRequest('catalog_product'),
                 $this->mappedSource(self::PRODUCT_COLUMNS, $this->productRows($prefix))
             );
@@ -443,11 +454,11 @@ class CoreBridgeTest extends TestCase
             0,
             2
         );
-        $coreReplace = $this->importer->run(
+        $coreReplace = $this->importer()->run(
             new ImportRequest('catalog_product', Import::BEHAVIOR_REPLACE),
             $this->csvSource(self::PRODUCT_COLUMNS, $replace($core))
         );
-        $ourReplace = $this->importer->run(
+        $ourReplace = $this->importer()->run(
             new ImportRequest('catalog_product', Import::BEHAVIOR_REPLACE),
             $this->mappedSource(self::PRODUCT_COLUMNS, $replace($ours))
         );
@@ -462,11 +473,11 @@ class CoreBridgeTest extends TestCase
         );
 
         $delete = static fn (string $prefix): array => [['sku' => $prefix . '-3'], ['sku' => $prefix . '-4']];
-        $coreDelete = $this->importer->run(
+        $coreDelete = $this->importer()->run(
             new ImportRequest('catalog_product', Import::BEHAVIOR_DELETE),
             $this->csvSource(['sku'], $delete($core))
         );
-        $ourDelete = $this->importer->run(
+        $ourDelete = $this->importer()->run(
             new ImportRequest('catalog_product', Import::BEHAVIOR_DELETE),
             $this->mappedSource(['sku'], $delete($ours))
         );
