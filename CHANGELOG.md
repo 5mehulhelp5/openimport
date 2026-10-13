@@ -12,3 +12,6 @@ All notable changes to this project are documented here. The format follows
   `CoreImporter`): validate-only dry runs that leave nothing behind, live runs recorded in core's import history,
   core's shared error aggregator cleared per run. Proven equal to core's own CSV import on Magento 2.4.7, 2.4.8 and
   2.4.9.
+- File readers for CSV/TSV (delimiter and encoding detection, UTF-16, Windows-1252), Excel .xlsx (own streaming
+  reader, dates, sheet choice), JSON (record path, nested fields as dotted columns) and XML (streaming, record path,
+  attributes, no DOCTYPE); format detection from the file name or content. See docs/file-formats.md.

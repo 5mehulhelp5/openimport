@@ -36,4 +36,21 @@ run in one PHP process, so peak memory grows from pass to pass and is shown for 
   a run with 1 % changed rows takes at most 10 % of a full run.
 - **Rate:** about 7,500 product rows or 48,000 customer rows per minute on a CI runner with indexers on schedule.
   Shops with "Update on Save" indexers will be slower; `openimport:doctor` warns about it.
-- 50,000 products and configurable products are measured in M1 (memory flat from 10k to 50k is an M1 done-when).
+- 50,000 products: see below. Configurable products and the full pipeline (readers, mapping, delta) are measured at
+  the end of M1 (memory flat from 10k to 50k is an M1 done-when).
+
+## 50,000 products (run [38403706606](https://github.com/iranimij/openimport-dev-env/actions/runs/38403706606), 2026-10-13)
+
+Same method, `products-50k` (50,000 simple products plus 5,000 German store-view rows = 55,000 rows).
+
+| Path | Pass | Rows | Created | Updated | Seconds | Rows / min |
+|---|---|---|---|---|---|---|
+| core CSV | create | 55,000 | 50,000 | 50 | 438.6 | 7,523 |
+| core CSV | update | 55,000 | 0 | 55,000 | 471.6 | 6,997 |
+| OpenImport | create | 55,000 | 50,000 | 50 | 453.8 | 7,272 |
+| OpenImport | update | 55,000 | 0 | 55,000 | 497.1 | 6,639 |
+
+- Core's rate stays flat from 10k to 50k (about 7,500 rows per minute): no slowdown with catalog size at this scale.
+- Bridge overhead +3.5 % (create) and +5.4 % (update), inside the 15 % budget.
+- Peak memory is not comparable between passes here (one process, four passes). The M1 memory check runs each pass in
+  its own process.
