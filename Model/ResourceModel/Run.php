@@ -64,6 +64,39 @@ class Run extends AbstractDb
     }
 
     /**
+     * Moves one queued run to "running"; false when another process was faster.
+     *
+     * @param int $runId
+     * @return bool
+     */
+    public function claim(int $runId): bool
+    {
+        return $this->getConnection()->update(
+            $this->getMainTable(),
+            [
+                'status' => RunInterface::STATUS_RUNNING,
+                'started_at' => (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Y-m-d H:i:s'),
+            ],
+            ['run_id = ?' => $runId, 'status = ?' => RunInterface::STATUS_QUEUED]
+        ) === 1;
+    }
+
+    /**
+     * Puts a claimed run back into the queue (its profile or entity is busy).
+     *
+     * @param int $runId
+     * @return void
+     */
+    public function requeue(int $runId): void
+    {
+        $this->getConnection()->update(
+            $this->getMainTable(),
+            ['status' => RunInterface::STATUS_QUEUED, 'started_at' => null],
+            ['run_id = ?' => $runId, 'status = ?' => RunInterface::STATUS_RUNNING]
+        );
+    }
+
+    /**
      * Writes progress and counts of a running run without loading or saving the whole row.
      *
      * @param int $runId

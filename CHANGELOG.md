@@ -26,3 +26,8 @@ All notable changes to this project are documented here. The format follows
   `_lock`, `_export_mark`), profile and run repositories (`Api/`), profile validation listing every problem, run
   queue claimed with conditional updates, batched error, preview and delta-hash storage, stale-aware locks, and a
   5-field cron expression parser.
+- Import pipeline: queued runs executed by a run processor with profile and entity locks; read → filter → map →
+  only-add/only-update → delta → Magento validation and import; prepared rows spooled to the run folder (flat memory);
+  errors (OpenImport's and Magento's) mapped to the rows of the source file with the original row kept for the
+  error report; dry runs with a field-level preview of products and customers; safety threshold with confirmation
+  for Delete and Replace; delta hashes saved only for rows Magento imported. See docs/runs.md.
