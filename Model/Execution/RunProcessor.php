@@ -155,17 +155,53 @@ class RunProcessor
         }
         $runId = (int) $run->getRunId();
         $folder = $this->runFiles->folder($runId);
-        [$file, $originalName] = $this->sources->fetch($profile, $run, $folder);
-        $staged = $this->runFiles->stageSource($runId, $file, $originalName);
+        $fetched = $this->sources->fetch($profile, $run, $folder);
+        $staged = $this->runFiles->stageSource($runId, $fetched->path, $fetched->name);
         $run->setSourceFile($this->runFiles->relative($staged));
+        if (empty($run->getOptions()['original_name']) && $fetched->name !== '') {
+            // The run page and the download show the file by its own name (uploads set it when queued).
+            $run->setOptions($run->getOptions() + ['original_name' => $fetched->name]);
+        }
         $this->runRepository->save($run);
         $heartbeat = function () use ($locks, $runId): void {
             foreach ($locks as $name) {
                 $this->locks->heartbeat($name, $runId);
             }
         };
+        $outcome = $this->importRunner->run($profile, $run, $staged, $folder, $fetched->name, $heartbeat);
+        if ($fetched->reference !== '' && !$run->isDryRun() && empty($run->getOptions()['file'])
+            && in_array($outcome->status, [RunInterface::STATUS_SUCCESS, RunInterface::STATUS_PARTIAL], true)) {
+            $outcome = $this->afterSuccess($profile, $fetched, $outcome);
+        }
 
-        return $this->importRunner->run($profile, $run, $staged, $folder, $originalName, $heartbeat);
+        return $outcome;
+    }
+
+    /**
+     * Moves or deletes the source file after a successful live run (profile's "after success"). A failure here does
+     * not undo the import: the run stays successful and says what did not work.
+     *
+     * @param ProfileInterface $profile
+     * @param FetchedFile $fetched
+     * @param RunOutcome $outcome
+     * @return RunOutcome
+     */
+    private function afterSuccess(ProfileInterface $profile, FetchedFile $fetched, RunOutcome $outcome): RunOutcome
+    {
+        try {
+            $this->sources->source($profile)->finish($profile, $fetched->reference);
+        } catch (PipelineException $exception) {
+            return new RunOutcome(
+                $outcome->status,
+                $outcome->counts,
+                rtrim($outcome->message) . ' The file was imported, but it could not be '
+                . ($profile->getAfterSuccess() === 'delete' ? 'deleted' : 'moved') . ' afterwards: '
+                . $exception->getMessage(),
+                $outcome->historyId
+            );
+        }
+
+        return $outcome;
     }
 
     private function finish(int $runId, RunOutcome $outcome): RunInterface

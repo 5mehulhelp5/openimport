@@ -91,12 +91,13 @@ define([
 
         /** @inheritdoc */
         initialize: function () {
+            // Listeners can fire while the links are set up: the debounced loader must exist before _super().
+            this.fetchLater = _.debounce(this.fetchFields.bind(this), 300);
             this._super();
             this.rows = ko.observableArray([]);
             _.each(this.initialValue || this.value() || [], function (row) {
                 this.rows.push(this.makeRow(row));
             }, this);
-            this.loadFields = _.debounce(this.fetchFields.bind(this), 300);
             this.fetchFields();
 
             return this;
@@ -168,6 +169,16 @@ define([
         },
 
         /**
+         * Entity or columns changed: the old proposal is stale right away (Auto-match waits), the request follows
+         * once the changes settle.
+         */
+        loadFields: function () {
+            this.matches = {};
+            this.loadingFields = true;
+            this.fetchLater();
+        },
+
+        /**
          * Loads the entity's fields and an auto-match proposal for the file's columns.
          */
         fetchFields: function () {
@@ -175,6 +186,7 @@ define([
 
             if (!this.entity) {
                 this.fields = [];
+                this.loadingFields = false;
 
                 return;
             }
