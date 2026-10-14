@@ -61,6 +61,37 @@
     padding: 0 .5rem;
 }
 
+/* Remove-row button: the trash icon, with the label kept for screen readers (the grid has no .action-delete style). */
+.openimport-mapping-table .action-delete {
+    background: none;
+    border: 0;
+    color: #514943;
+    cursor: pointer;
+    padding: .3rem;
+}
+
+.openimport-mapping-table .action-delete:hover {
+    color: #e22626;
+}
+
+.openimport-mapping-table .action-delete:before {
+    content: '\e630';
+    font-family: 'Admin Icons', sans-serif;
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.openimport-mapping-table .action-delete > span {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    width: 1px;
+}
+
 .openimport-add-transform {
     display: flex;
     flex-wrap: wrap;
@@ -99,4 +130,25 @@
     gap: 1rem;
     align-items: flex-end;
     margin: 1rem 0 2rem;
+}
+
+/* Links in the run summary: underlined and dark enough to read next to the muted status text. */
+.openimport-run .admin__page-section p a {
+    color: #006bb4;
+    text-decoration: underline;
+}
+
+/* "Last run" cell in the profile grid: link and status chip dark enough to read (WCAG AA). */
+.openimport-grid-run a {
+    color: #1a5a96;
+    text-decoration: underline;
+}
+
+.openimport-grid-run [class*="grid-severity-"] {
+    color: #2f2f2f;
+}
+
+/* Core's "Select" action menu in the grids is light grey by default; dark enough to read on OpenImport's pages. */
+.admin__data-grid-wrap .data-grid-actions-cell .action-select {
+    color: #41362f;
 }
