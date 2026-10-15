@@ -103,7 +103,7 @@ class CategoryImporter implements ImporterInterface
                     $updated += $u;
                 }
             } catch (\Throwable $exception) {
-                $this->logger->error('OpenImport category import: ' . $exception->getMessage(), ['exception' => $exception]);
+                $this->logger->error('OpenImport category import: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString(), ['exception' => $exception]);
                 $errors[] = new RowError($index, 'save', $exception->getMessage(), null, !$request->skipErrors);
                 $invalid++;
                 if (!$request->skipErrors) {
@@ -134,6 +134,11 @@ class CategoryImporter implements ImporterInterface
         if ($store !== '' && !isset($stores[$store])) {
             return ['store_view_code', sprintf('there is no store view "%s"', $store)];
         }
+        if ($store !== '' && $this->storeManager->hasSingleStore()) {
+            // Magento saves every store-view value of a one-store-view shop in the default scope: the default name
+            // would change and the next run would no longer find the category by its path.
+            return ['store_view_code', 'this shop has only one store view, so Magento keeps every value in the default scope; map the column to the default field (for example "name" instead of a store-view name)'];
+        }
         foreach (self::FLAGS as $flag) {
             if (isset($row[$flag]) && trim((string) $row[$flag]) !== '' && $this->flag($row[$flag]) === null) {
                 return [$flag, 'use 1 or 0 (also yes/no, true/false)'];
@@ -145,6 +150,14 @@ class CategoryImporter implements ImporterInterface
         $mode = strtoupper(trim((string) ($row['display_mode'] ?? '')));
         if ($mode !== '' && !in_array($mode, self::DISPLAY_MODES, true)) {
             return ['display_mode', 'use PRODUCTS, PAGE or PRODUCTS_AND_PAGE'];
+        }
+        $name = trim((string) ($row['name'] ?? ''));
+        if ($behavior !== Import::BEHAVIOR_DELETE && $store === '' && $name !== '' && $name !== end($segments)
+            && $this->tree->id((string) $row['path']) === null) {
+            return ['name', sprintf(
+                'a new category is named after the last part of its path ("%s"); use the name in the path, or leave the name column empty',
+                (string) end($segments)
+            )];
         }
         if ($behavior === Import::BEHAVIOR_DELETE && $this->tree->id((string) $row['path']) === null) {
             return ['path', 'there is no such category'];
@@ -169,14 +182,19 @@ class CategoryImporter implements ImporterInterface
             $walked[] = $name;
             $id = $this->tree->id($this->paths->join($walked));
             if ($id === null) {
+                // Created in the default scope as the admin does (the repository would save in the current store's
+                // scope, which in cron and CLI is a store view).
+                $parent = $this->categories->get($parentId, Store::DEFAULT_STORE_ID);
                 $category = $this->categoryFactory->create();
                 $category->setStoreId(Store::DEFAULT_STORE_ID)
                     ->setParentId($parentId)
+                    ->setPath((string) $parent->getPath())
                     ->setName($name)
                     ->setIsActive(true)
                     ->setIncludeInMenu(true);
-                $saved = $this->categories->save($category);
-                $id = (int) $saved->getId();
+                $category->setAttributeSetId($category->getDefaultAttributeSetId());
+                $this->categoryResource->save($category);
+                $id = (int) $category->getId();
                 $this->tree->add($id, $parentId, $name);
                 $created++;
             }
@@ -192,17 +210,26 @@ class CategoryImporter implements ImporterInterface
         if (!$category instanceof Category) {
             throw new LocalizedException(__('The category "%1" could not be loaded.', $row['path']));
         }
-        $changed = false;
+        $changedAttributes = [];
         foreach ($values as $attribute => $value) {
             if ((string) $category->getData($attribute) !== (string) $value) {
                 $category->setData($attribute, $value);
-                $changed = true;
+                $changedAttributes[] = $attribute;
             }
         }
+        $changed = $changedAttributes !== [];
         if ($changed) {
-            // The resource model saves the store's own values (the repository only keeps interface fields).
             $category->setStoreId($storeId);
-            $this->categoryResource->save($category);
+            if ($storeId !== Store::DEFAULT_STORE_ID && !in_array('url_key', $changedAttributes, true)) {
+                // A store view's own values (name, description, meta …) are saved one by one: a full save in store
+                // scope regenerates every URL rewrite of the category and its children and can clash with itself.
+                foreach ($changedAttributes as $attribute) {
+                    $this->categoryResource->saveAttribute($category, $attribute);
+                }
+            } else {
+                // The resource model saves the store's values (the repository keeps interface fields only).
+                $this->categoryResource->save($category);
+            }
             if (isset($values['name']) && $storeId === Store::DEFAULT_STORE_ID) {
                 $this->tree->reset();
             }
