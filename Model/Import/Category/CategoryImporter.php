@@ -104,7 +104,7 @@ class CategoryImporter implements ImporterInterface
                 }
             } catch (\Throwable $exception) {
                 $this->logger->error('OpenImport category import: ' . $exception->getMessage() . "\n" . $exception->getTraceAsString(), ['exception' => $exception]);
-                $errors[] = new RowError($index, 'save', $exception->getMessage(), null, !$request->skipErrors);
+                $errors[] = new RowError($index, 'save', $this->message($exception), null, !$request->skipErrors);
                 $invalid++;
                 if (!$request->skipErrors) {
                     return $this->result(false, $created + $updated + $deleted > 0, $position, $invalid, $created, $updated, $deleted, $errors, $started);
@@ -138,6 +138,17 @@ class CategoryImporter implements ImporterInterface
             // Magento saves every store-view value of a one-store-view shop in the default scope: the default name
             // would change and the next run would no longer find the category by its path.
             return ['store_view_code', 'this shop has only one store view, so Magento keeps every value in the default scope; map the column to the default field (for example "name" instead of a store-view name)'];
+        }
+        foreach (self::TEXTS as $column) {
+            if (trim((string) ($row[$column] ?? '')) !== Import::DEFAULT_EMPTY_ATTRIBUTE_VALUE_CONSTANT) {
+                continue;
+            }
+            if ($column === 'name' || $column === 'url_key') {
+                return [$column, sprintf('a category always has a %s; it cannot be cleared', $column)];
+            }
+            if ($store !== '') {
+                return [$column, 'a store view\'s value cannot be cleared by import; use "Use Default Value" in the admin'];
+            }
         }
         foreach (self::FLAGS as $flag) {
             if (isset($row[$flag]) && trim((string) $row[$flag]) !== '' && $this->flag($row[$flag]) === null) {
@@ -269,9 +280,13 @@ class CategoryImporter implements ImporterInterface
     {
         $values = [];
         foreach (self::TEXTS as $column) {
-            if (array_key_exists($column, $row) && $row[$column] !== null) {
-                $values[$column] = (string) $row[$column];
+            // An empty cell leaves the value as it is (also the cells a store-view-only column leaves in the default
+            // row); __EMPTY__VALUE__ clears it, as in Magento's import.
+            $value = $row[$column] ?? null;
+            if ($value === null || trim((string) $value) === '') {
+                continue;
             }
+            $values[$column] = (string) $value === Import::DEFAULT_EMPTY_ATTRIBUTE_VALUE_CONSTANT ? '' : (string) $value;
         }
         foreach (self::FLAGS as $flag) {
             if (isset($row[$flag]) && trim((string) $row[$flag]) !== '') {
@@ -287,6 +302,32 @@ class CategoryImporter implements ImporterInterface
         }
 
         return $values;
+    }
+
+    /**
+     * The exception's message; for a URL clash with the URLs that are taken (Magento only says "URL key for specified
+     * store already exists").
+     *
+     * @param \Throwable $exception
+     * @return string
+     */
+    public function message(\Throwable $exception): string
+    {
+        $message = $exception->getMessage();
+        if (!method_exists($exception, 'getUrls')) {
+            return $message;
+        }
+        $taken = [];
+        foreach ((array) $exception->getUrls() as $url) {
+            $url = is_object($url) && method_exists($url, 'toArray') ? $url->toArray() : (array) $url;
+            $taken[] = sprintf('"%s" in store view %s', $url['request_path'] ?? '?', $url['store_id'] ?? '?');
+        }
+        if ($taken === []) {
+            return $message;
+        }
+
+        return rtrim($message, '.') . ': ' . implode(', ', array_slice(array_unique($taken), 0, 5))
+            . '. Give the category another url_key, or change the page that uses this URL.';
     }
 
     /**
